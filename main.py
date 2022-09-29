@@ -69,6 +69,24 @@ def four_point_transform(image, one_c):
     return warped
 
 
+def load_res(filename: str) -> list[bool]:
+    res = []
+    with open(filename) as file:
+        for line in file:
+            if line:
+                res.append('1' in line)
+    return res
+
+
+def cmp_results(res: list[bool], correct: list[bool]) -> None:
+    count = 0
+
+    for rec, exp in zip(res, correct):
+        count += rec == exp
+
+    print(f'Success rate: {count / len(res)}')
+
+
 def main(argv):
 
     pkm_file = open('parking_map_python.txt', 'r')
@@ -92,6 +110,10 @@ def main(argv):
         print(img_name)
         img = cv.imread(img_name, 0)
         img_cpy = img.copy()
+
+        res_file = f'{img_name[:-3]}txt'
+        correct_results = load_res(res_file)
+        res = []
 
         for coord in pkm_coordinates:
             place = four_point_transform(img, coord)
@@ -121,10 +143,12 @@ def main(argv):
             p3 = int(coord[4]), int(coord[5]),
             p4 = int(coord[6]), int(coord[7]),
 
+            res.append(non_zero_ratio >= is_car_ratio)
             if non_zero_ratio >= is_car_ratio:
                 cv.line(img_cpy, p1, p3, 255, 2)
                 cv.line(img_cpy, p2, p4, 255, 2)
 
+        cmp_results(res, correct_results)
         cv.imshow('Zpiceny eduroam', img_cpy)
         cv.waitKey(0)
 
