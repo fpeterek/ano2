@@ -2,9 +2,11 @@
 
 import sys
 import glob
+import random
 
 import cv2 as cv
 import numpy as np
+import click
 
 
 def order_points(pts):
@@ -87,7 +89,8 @@ def cmp_results(res: list[bool], correct: list[bool]) -> None:
     print(f'Success rate: {count / len(res)}')
 
 
-def main(argv):
+@click.command()
+def default_classifier():
 
     pkm_file = open('parking_map_python.txt', 'r')
     pkm_lines = pkm_file.readlines()
@@ -153,5 +156,150 @@ def main(argv):
         cv.waitKey(0)
 
 
+def create_hog_descriptor() -> cv.HOGDescriptor:
+    win_size = (20, 20)
+    block_size = (10, 10)
+    block_stride = (5, 5)
+    cell_size = (10, 10)
+    nbins = 9
+    deriv_aperture = 1
+    win_sigma = -1.
+    histogram_norm_type = 0
+    l2_hys_threshold = 0.2
+    gamma_correction = 1
+    nlevels = 64
+    signed_gradients = True
+
+    return cv.HOGDescriptor(
+            win_size,
+            block_size,
+            block_size,
+            block_stride,
+            cell_size,
+            nbins,
+            deriv_aperture,
+            win_sigma,
+            histogram_norm_type,
+            l2_hys_threshold,
+            gamma_correction,
+            nlevels,
+            signed_gradients)
+
+
+def load_ds(hog: cv.HOGDescriptor, folder: str, label: bool | int) -> list[tuple]:
+    label = int(label)
+
+    signals = []
+
+    for img_name in glob.glob(f'{folder}/*'):
+        img = cv.imread(img_name, 0)
+        img = cv.medianBlur(img, 3)
+        img = cv.resize(img, (128, 64))
+
+        hog_sigs = hog.compute(img)
+
+        signals.append((hog_sigs, label))
+
+    return signals
+
+
+@click.command()
+@click.option('--free-set', help='Folder with images of free parking spaces')
+@click.option('--occupied-set',
+              help='Folder with images of occupied parking spaces')
+@click.option('--model-name', help='Name of model')
+def train(free_set: str, occupied_set: str, model_name: str):
+    hog = create_hog_descriptor()
+
+    svm = cv.ml.SVM_create()
+    svm.setType(cv.ml.SVM_C_SVC)
+    svm.setKernel(cv.ml.SVM_RBF)
+    svm.setC(12.5)
+    svm.setGamma(0.5)
+
+    # TODO: train
+    s1 = load_ds(hog, free_set, 0)
+    s2 = load_ds(hog, occupied_set, 1)
+
+    sigs = s1 + s2
+    random.shuffle(sigs)
+
+    signals = np.matrix([s for s, l in sigs])
+    labels = np.array([l for s, l in sigs])
+
+    svm.train(signals, cv.ml.ROW_SAMPLE, labels)
+
+    svm.save(model_name)
+
+
+@click.command()
+@click.option('--model-name', help='Name of model')
+def hog_classifier(model_name: str):
+    pkm_file = open('parking_map_python.txt', 'r')
+    pkm_lines = pkm_file.readlines()
+    pkm_coordinates = []
+
+    for line in pkm_lines:
+        st_line = line.strip()
+        sp_line = list(st_line.split(" "))
+        pkm_coordinates.append(sp_line)
+
+    test_images = [img for img in glob.glob("test_images/*.jpg")]
+    test_images.sort()
+    print(pkm_coordinates)
+    print("********************************************************")
+
+    hog = hog_classifier()
+    svm = cv.ml.SVM.load(model_name)
+
+    cv.namedWindow('Zpiceny eduroam', 0)
+    for img_name in test_images:
+        print(img_name)
+        img = cv.imread(img_name, 0)
+        img_cpy = img.copy()
+
+        res_file = f'{img_name[:-3]}txt'
+        correct_results = load_res(res_file)
+        res = []
+
+        for coord in pkm_coordinates:
+            place = four_point_transform(img, coord)
+            place = cv.medianBlur(place, 3)
+
+            height, width = place.shape
+            des_height = 64
+            des_width = round((height / des_height) * width)
+
+            place = cv.resize(place, (des_height, des_width))
+
+            hog_sigs = hog.compute(place)
+            occupied, _ = svm.predict(hog_sigs)
+
+            # occupied = 0
+
+            p1 = int(coord[0]), int(coord[1]),
+            p2 = int(coord[2]), int(coord[3]),
+            p3 = int(coord[4]), int(coord[5]),
+            p4 = int(coord[6]), int(coord[7]),
+
+            res.append()
+            if occupied:
+                cv.line(img_cpy, p1, p3, 255, 2)
+                cv.line(img_cpy, p2, p4, 255, 2)
+
+        cmp_results(res, correct_results)
+        cv.imshow('Zpiceny eduroam', img_cpy)
+        cv.waitKey(0)
+    pass
+
+
+@click.group('ANO 2')
+def main() -> None:
+    pass
+
+
+main.add_command(default_classifier)
+
+
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()
