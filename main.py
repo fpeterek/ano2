@@ -157,13 +157,13 @@ def default_classifier():
 
 
 def create_hog_descriptor() -> cv.HOGDescriptor:
-    win_size = (20, 20)
-    block_size = (10, 10)
-    block_stride = (5, 5)
-    cell_size = (10, 10)
+    win_size = (96, 96)
+    block_size = (32, 32)
+    block_stride = (16, 16)
+    cell_size = (8, 8)
     nbins = 9
     deriv_aperture = 1
-    win_sigma = -1.
+    win_sigma = -1
     histogram_norm_type = 0
     l2_hys_threshold = 0.2
     gamma_correction = 1
@@ -172,7 +172,6 @@ def create_hog_descriptor() -> cv.HOGDescriptor:
 
     return cv.HOGDescriptor(
             win_size,
-            block_size,
             block_size,
             block_stride,
             cell_size,
@@ -194,7 +193,7 @@ def load_ds(hog: cv.HOGDescriptor, folder: str, label: bool | int) -> list[tuple
     for img_name in glob.glob(f'{folder}/*'):
         img = cv.imread(img_name, 0)
         img = cv.medianBlur(img, 3)
-        img = cv.resize(img, (128, 64))
+        img = cv.resize(img, (96, 96))
 
         hog_sigs = hog.compute(img)
 
@@ -208,14 +207,17 @@ def load_ds(hog: cv.HOGDescriptor, folder: str, label: bool | int) -> list[tuple
 @click.option('--occupied-set',
               help='Folder with images of occupied parking spaces')
 @click.option('--model-name', help='Name of model')
-def train(free_set: str, occupied_set: str, model_name: str):
+@click.option('--c', default=100, help='C parameter of svm')
+@click.option('--gamma', default=1.0, help='Gamma parameter of svm')
+def train_hog(free_set: str, occupied_set: str, model_name: str, c: float, gamma: float):
     hog = create_hog_descriptor()
 
     svm = cv.ml.SVM_create()
     svm.setType(cv.ml.SVM_C_SVC)
-    svm.setKernel(cv.ml.SVM_RBF)
-    svm.setC(12.5)
-    svm.setGamma(0.5)
+    svm.setKernel(cv.ml.SVM_INTER)
+    svm.setC(c)
+    svm.setGamma(gamma)
+    svm.setTermCriteria((cv.TERM_CRITERIA_MAX_ITER, 1000, 1e-6))
 
     # TODO: train
     s1 = load_ds(hog, free_set, 0)
@@ -249,7 +251,7 @@ def hog_classifier(model_name: str):
     print(pkm_coordinates)
     print("********************************************************")
 
-    hog = hog_classifier()
+    hog = create_hog_descriptor()
     svm = cv.ml.SVM.load(model_name)
 
     cv.namedWindow('Zpiceny eduroam', 0)
@@ -266,23 +268,17 @@ def hog_classifier(model_name: str):
             place = four_point_transform(img, coord)
             place = cv.medianBlur(place, 3)
 
-            height, width = place.shape
-            des_height = 64
-            des_width = round((height / des_height) * width)
-
-            place = cv.resize(place, (des_height, des_width))
+            place = cv.resize(place, (96, 96))
 
             hog_sigs = hog.compute(place)
-            occupied, _ = svm.predict(hog_sigs)
-
-            # occupied = 0
+            occupied = svm.predict(np.matrix(hog_sigs))[1][0] > 0.5
 
             p1 = int(coord[0]), int(coord[1]),
             p2 = int(coord[2]), int(coord[3]),
             p3 = int(coord[4]), int(coord[5]),
             p4 = int(coord[6]), int(coord[7]),
 
-            res.append()
+            res.append(occupied)
             if occupied:
                 cv.line(img_cpy, p1, p3, 255, 2)
                 cv.line(img_cpy, p2, p4, 255, 2)
@@ -299,6 +295,8 @@ def main() -> None:
 
 
 main.add_command(default_classifier)
+main.add_command(train_hog)
+main.add_command(hog_classifier)
 
 
 if __name__ == "__main__":
