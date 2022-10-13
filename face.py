@@ -4,7 +4,8 @@ import cv2 as cv
 # Arg could also be a path to a file
 cap = cv.VideoCapture(0)
 
-face_cascade = cv.CascadeClassifier('haarcascade_frontalface_default.xml')
+# face_cascade = cv.CascadeClassifier('haarcascade_frontalface_default.xml')
+face_cascade = cv.CascadeClassifier('lbpface.xml')
 
 
 if __name__ == '__main__':

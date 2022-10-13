@@ -320,6 +320,8 @@ def main() -> None:
     pass
 
 
+# TODO: Use LBP
+
 main.add_command(default_classifier)
 main.add_command(train_hog)
 main.add_command(hog_classifier)
