@@ -2,6 +2,7 @@ venv/
 *.py[co]
 __pycache__/
 train_images/
+test_images/
 lbpface.xml
 haarface.xml
 
