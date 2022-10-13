@@ -185,7 +185,7 @@ def create_hog_descriptor() -> cv.HOGDescriptor:
             signed_gradients)
 
 
-def load_ds(hog: cv.HOGDescriptor, folder: str, label: bool | int) -> list[tuple]:
+def load_folder(signaller, folder: str, label: bool | int) -> list[tuple]:
     label = int(label)
 
     signals = []
@@ -195,11 +195,24 @@ def load_ds(hog: cv.HOGDescriptor, folder: str, label: bool | int) -> list[tuple
         img = cv.medianBlur(img, 3)
         img = cv.resize(img, (96, 96))
 
-        hog_sigs = hog.compute(img)
+        sigs = signaller(img)
 
-        signals.append((hog_sigs, label))
+        signals.append((sigs, label))
 
     return signals
+
+
+def load_training_ds(signaller, free_folder: str, occupied_folder: str):
+    s1 = load_folder(signaller, free_folder, 0)
+    s2 = load_folder(signaller, occupied_folder, 1)
+
+    sigs = s1 + s2
+    random.shuffle(sigs)
+
+    signals = np.matrix([s for s, l in sigs])
+    labels = np.array([l for s, l in sigs])
+
+    return signals, labels
 
 
 @click.command()
@@ -219,15 +232,10 @@ def train_hog(free_set: str, occupied_set: str, model_name: str, c: float, gamma
     svm.setGamma(gamma)
     svm.setTermCriteria((cv.TERM_CRITERIA_MAX_ITER, 1000, 1e-6))
 
-    # TODO: train
-    s1 = load_ds(hog, free_set, 0)
-    s2 = load_ds(hog, occupied_set, 1)
-
-    sigs = s1 + s2
-    random.shuffle(sigs)
-
-    signals = np.matrix([s for s, l in sigs])
-    labels = np.array([l for s, l in sigs])
+    signals, labels = load_training_ds(
+            signaller=hog.compute,
+            free_folder=free_set,
+            occupied_folder=occupied_set)
 
     svm.train(signals, cv.ml.ROW_SAMPLE, labels)
 
