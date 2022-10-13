@@ -315,6 +315,70 @@ def hog_classifier(model_name: str, enable_edge_detection: bool):
         cv.waitKey(0)
 
 
+@click.command()
+def lbp_classifier() -> None:
+    pkm_file = open('parking_map_python.txt', 'r')
+    pkm_lines = pkm_file.readlines()
+    pkm_coordinates = []
+
+    for line in pkm_lines:
+        st_line = line.strip()
+        sp_line = list(st_line.split(" "))
+        pkm_coordinates.append(sp_line)
+
+    test_images = [img for img in glob.glob("test_images/*.jpg")]
+    train_images_occ = [cv.imread(img, 0) for img in glob.glob("train_images/full/*")]
+    train_images_free = [cv.imread(img, 0) for img in glob.glob("train_images/free/*")]
+
+    labels_occ = [1] * len(train_images_occ)
+    labels_free = [0] * len(train_images_free)
+
+    train_imgs = train_images_occ + train_images_free
+    labels = labels_occ + labels_free
+
+    lbp = cv.face.LBPHFaceRecognizer_create()
+    lbp.train(train_imgs, np.array(labels))
+
+    test_images.sort()
+    print(pkm_coordinates)
+    print("********************************************************")
+
+    cv.namedWindow('Zpiceny eduroam', 0)
+    for img_name in test_images:
+        print(img_name)
+        img = cv.imread(img_name, 0)
+        img_cpy = img.copy()
+
+        res_file = f'{img_name[:-3]}txt'
+        correct_results = load_res(res_file)
+        res = []
+
+        for coord in pkm_coordinates:
+            place = four_point_transform(img, coord)
+            place = cv.medianBlur(place, 3)
+
+            place = cv.resize(place, (80, 80))
+
+            print('Predicting...')
+            occupied, conf = lbp.predict(place)
+            print('Prediction performed')
+            occupied = bool(occupied)
+
+            p1 = int(coord[0]), int(coord[1]),
+            p2 = int(coord[2]), int(coord[3]),
+            p3 = int(coord[4]), int(coord[5]),
+            p4 = int(coord[6]), int(coord[7]),
+
+            res.append(occupied)
+            if occupied:
+                cv.line(img_cpy, p1, p3, 255, 2)
+                cv.line(img_cpy, p2, p4, 255, 2)
+
+        cmp_results(res, correct_results)
+        cv.imshow('Zpiceny eduroam', img_cpy)
+        cv.waitKey(0)
+
+
 @click.group('ANO 2')
 def main() -> None:
     pass
@@ -325,6 +389,7 @@ def main() -> None:
 main.add_command(default_classifier)
 main.add_command(train_hog)
 main.add_command(hog_classifier)
+main.add_command(lbp_classifier)
 
 
 if __name__ == "__main__":
