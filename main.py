@@ -244,7 +244,8 @@ def train_hog(free_set: str, occupied_set: str, model_name: str, c: float, gamma
 
 @click.command()
 @click.option('--model-name', help='Name of model')
-def hog_classifier(model_name: str):
+@click.option('--enable-edge-detection', default=False, help='Enable edge detection')
+def hog_classifier(model_name: str, enable_edge_detection: bool):
     pkm_file = open('parking_map_python.txt', 'r')
     pkm_lines = pkm_file.readlines()
     pkm_coordinates = []
@@ -272,6 +273,9 @@ def hog_classifier(model_name: str):
         correct_results = load_res(res_file)
         res = []
 
+        edge_and_hog_ratio = 0.02
+        edge_only_ratio = 0.07
+
         for coord in pkm_coordinates:
             place = four_point_transform(img, coord)
             place = cv.medianBlur(place, 3)
@@ -279,7 +283,22 @@ def hog_classifier(model_name: str):
             place = cv.resize(place, (96, 96))
 
             hog_sigs = hog.compute(place)
-            occupied = svm.predict(np.matrix(hog_sigs))[1][0] > 0.5
+            hog_occupied = svm.predict(np.matrix(hog_sigs))[1][0] > 0.5
+
+            if enable_edge_detection:
+                canny_img = cv.Canny(place, 150, 200)
+
+                non_zero_ratio = 0
+
+                for y in range(canny_img.shape[0]):
+                    for x in range(canny_img.shape[1]):
+                        non_zero_ratio += canny_img[y, x] > 127
+
+                non_zero_ratio /= 96*96
+
+                occupied = \
+                    (hog_occupied and non_zero_ratio > edge_and_hog_ratio) or \
+                    non_zero_ratio > edge_only_ratio
 
             p1 = int(coord[0]), int(coord[1]),
             p2 = int(coord[2]), int(coord[3]),
@@ -294,7 +313,6 @@ def hog_classifier(model_name: str):
         cmp_results(res, correct_results)
         cv.imshow('Zpiceny eduroam', img_cpy)
         cv.waitKey(0)
-    pass
 
 
 @click.group('ANO 2')
