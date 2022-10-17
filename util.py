@@ -4,6 +4,7 @@ import random
 import numpy as np
 import cv2 as cv
 import skimage.feature as skf
+import xgboost as xgb
 
 import conf
 
@@ -165,3 +166,9 @@ def load_training_ds(signaller, free_folder: str, occupied_folder: str):
     labels = [l for s, l in sigs]
 
     return signals, labels
+
+
+def load_booster(model_name: str) -> xgb.Booster:
+    bst = xgb.Booster()
+    bst.load_model(model_name)
+    return bst
