@@ -9,7 +9,6 @@ python3 train.py train-hog --free-set train_images/free --occupied-set train_ima
 ## Predict
 
 ```sh
-python3 main.py lbp-classifier --xgb-model lbp.json
-python3 main.py hog-classifier --model-name hog.yml --enable-edge-detection y
+python3 parking_lot classify --lbp-model models/lbp.json --hog-model models/hog.yml
 ```
 
