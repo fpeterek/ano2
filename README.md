@@ -12,3 +12,4 @@ python3 train.py train-hog --free-set train_images/free --occupied-set train_ima
 python3 parking_lot classify --lbp-model models/lbp.json --hog-model models/hog.yml
 ```
 
+python3 parking_lot/train.py train-final-classifier --free-set data/train_images/free --occupied-set data/train_images/full --hog-model models/hog.yml --lbp-model models/lbp.json --model-name classifier.model

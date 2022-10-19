@@ -6,10 +6,11 @@ import cv2 as cv
 import numpy as np
 import click
 import xgboost as xgb
+import sklearn.neural_network as sknn
 
 import util
 import conf
-from edge_predictor import EdgePredictor
+from combined_signaller import CombinedSignaller
 
 
 def load_coords(filename: str):
@@ -58,9 +59,8 @@ def hog_prediction(hog, svm, img):
 
 def process_img(
         img_name: str,
-        lbp_booster: xgb.Booster,
-        hog_model,
-        edge_predictor: EdgePredictor,
+        signaller: CombinedSignaller,
+        classifier: sknn.MLPClassifier,
         pkm_coordinates: list[list]):
 
     img = cv.imread(img_name, 0)
@@ -69,22 +69,14 @@ def process_img(
     correct_results = load_results_for_img(img_name)
     res = []
 
-    lbp = util.create_lbp_signaller()
-    hog = util.create_hog_descriptor()
-
     for coord in pkm_coordinates:
         place = extract_parking_space(img, coord)
 
-        lbp_pred = lbp_prediction(lbp, lbp_booster, place)
-        hog_pred = hog_prediction(hog, hog_model, place)
-        edge_pred = edge_predictor.predict(place)
+        signals = signaller.get_signals(place)
 
-        # occupied = lbp_pred > 0.8 and hog_pred > 0.5 and edge_pred > 0.35
-        weights = [1.0, 1.0, 2.0]
-        preds = [lbp_pred, hog_pred, edge_pred]
+        mlp_pred = classifier.predict(np.asarray([signals]))
 
-        occupied = sum([p*w for p, w in zip(preds, weights)]) / sum(weights)
-        occupied = occupied > 0.5
+        occupied = mlp_pred[0]
 
         res.append(occupied)
         if occupied:
@@ -98,21 +90,23 @@ def process_img(
 @click.command()
 @click.option('--lbp-model', help='Path to XGB model used in prediction')
 @click.option('--hog-model', help='Path to SVM model used in prediction')
-def classify(lbp_model: str, hog_model: str) -> None:
+@click.option('--final-classifier-model', help='Path to MLP model')
+def classify(lbp_model, hog_model, final_classifier_model) -> None:
 
     pkm_coordinates = load_coords('data/parking_map_python.txt')
     test_images = sorted([img for img in glob.glob('data/test_images/*.jpg')])
     lbp_booster = util.load_booster(lbp_model)
     hog_svm = cv.ml.SVM.load(hog_model)
-    edge_pred = EdgePredictor()
+
+    signaller = CombinedSignaller(lbp=lbp_booster, hog=hog_svm)
+    classifier = util.load_final_classifier(final_classifier_model)
 
     cv.namedWindow('Zpiceny eduroam', 0)
     for img_name in test_images:
         process_img(
                 img_name=img_name,
-                lbp_booster=lbp_booster,
-                hog_model=hog_svm,
-                edge_predictor=edge_pred,
+                signaller=signaller,
+                classifier=classifier,
                 pkm_coordinates=pkm_coordinates)
 
 

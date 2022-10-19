@@ -1,9 +1,13 @@
+import pickle
+
 import click
 import cv2 as cv
 import numpy as np
 import xgboost as xgb
+import sklearn.neural_network as sknn
 
 import util
+from combined_signaller import CombinedSignaller
 
 
 @click.command()
@@ -71,6 +75,44 @@ def train_lbp(free_set: str, occupied_set: str, model_name: str):
     booster.save_model(model_name)
 
 
+@click.command()
+@click.option('--free-set', help='Folder with images of free parking spaces')
+@click.option('--occupied-set',
+              help='Folder with images of occupied parking spaces')
+@click.option('--hog-model', help='Name of HOG model')
+@click.option('--lbp-model', help='Name of LBP model')
+@click.option('--model-name', help='Name of model')
+def train_final_classifier(
+        free_set: str,
+        occupied_set: str,
+        hog_model: str,
+        lbp_model: str,
+        model_name: str):
+
+    lbp_model = util.load_booster(lbp_model)
+    hog_model = cv.ml.SVM.load(hog_model)
+    signaller = CombinedSignaller(hog=hog_model, lbp=lbp_model)
+
+    signals, labels = util.load_training_ds(
+            signaller=signaller.get_signals,
+            free_folder=free_set,
+            occupied_folder=occupied_set)
+
+    signals = np.matrix(signals)
+    labels = np.array(labels)
+
+    mlp = sknn.MLPClassifier(
+            solver='lbfgs',
+            alpha=0.1,
+            hidden_layer_sizes=(4, 4),
+            random_state=350)
+
+    mlp.fit(signals, labels)
+
+    with open(model_name, 'wb') as file:
+        pickle.dump(mlp, file)
+
+
 @click.group('Training')
 def main() -> None:
     pass
@@ -78,6 +120,7 @@ def main() -> None:
 
 main.add_command(train_hog)
 main.add_command(train_lbp)
+main.add_command(train_final_classifier)
 
 
 if __name__ == '__main__':

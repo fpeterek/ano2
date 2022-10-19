@@ -1,10 +1,12 @@
 import glob
 import random
+import pickle
 
 import numpy as np
 import cv2 as cv
 import skimage.feature as skf
 import xgboost as xgb
+import sklearn.neural_network as sknn
 
 import conf
 
@@ -172,3 +174,8 @@ def load_booster(model_name: str) -> xgb.Booster:
     bst = xgb.Booster()
     bst.load_model(model_name)
     return bst
+
+
+def load_final_classifier(model_name: str) -> sknn.MLPClassifier:
+    with open(model_name, 'rb') as file:
+        return pickle.load(file)
