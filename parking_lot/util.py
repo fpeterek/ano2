@@ -82,13 +82,15 @@ def load_res(filename: str) -> list[bool]:
     return res
 
 
-def cmp_results(res: list[bool], correct: list[bool]) -> None:
+def cmp_results(res: list[bool], correct: list[bool]) -> tuple[int, int]:
     count = 0
 
     for rec, exp in zip(res, correct):
         count += rec == exp
 
     print(f'Success rate: {count / len(res)}')
+
+    return count, len(res)
 
 
 def create_hog_descriptor() -> cv.HOGDescriptor:

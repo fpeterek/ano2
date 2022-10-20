@@ -98,7 +98,7 @@ def train_final_classifier(
             free_folder=free_set,
             occupied_folder=occupied_set)
 
-    signals = np.matrix(signals)
+    signals = np.asarray(signals)
     labels = np.array(labels)
 
     mlp = sknn.MLPClassifier(

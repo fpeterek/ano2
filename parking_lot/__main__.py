@@ -61,7 +61,7 @@ def process_img(
         img_name: str,
         signaller: CombinedSignaller,
         classifier: sknn.MLPClassifier,
-        pkm_coordinates: list[list]):
+        pkm_coordinates: list[list]) -> tuple[int, int]:
 
     img = cv.imread(img_name, 0)
     img_cpy = img.copy()
@@ -82,9 +82,12 @@ def process_img(
         if occupied:
             mark_occupied(coord, img_cpy)
 
-    util.cmp_results(res, correct_results)
+    succ, total = util.cmp_results(res, correct_results)
+
     cv.imshow('Zpiceny eduroam', img_cpy)
     cv.waitKey(0)
+
+    return succ, total
 
 
 @click.command()
@@ -101,13 +104,20 @@ def classify(lbp_model, hog_model, final_classifier_model) -> None:
     signaller = CombinedSignaller(lbp=lbp_booster, hog=hog_svm)
     classifier = util.load_final_classifier(final_classifier_model)
 
+    total_successful = 0
+    total = 0
+
     cv.namedWindow('Zpiceny eduroam', 0)
     for img_name in test_images:
-        process_img(
+        s, t = process_img(
                 img_name=img_name,
                 signaller=signaller,
                 classifier=classifier,
                 pkm_coordinates=pkm_coordinates)
+        total_successful += s
+        total += t
+
+    print(f'Total success rate: {total_successful / total}')
 
 
 @click.group('Classification')
