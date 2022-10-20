@@ -5,4 +5,5 @@ train_images/
 test_images/
 lbpface.xml
 haarface.xml
+cifar-10-*
 
