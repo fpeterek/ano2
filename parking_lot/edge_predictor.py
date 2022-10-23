@@ -1,19 +1,214 @@
+import math
+
 import cv2 as cv
 
 
 class EdgePredictor:
 
+    def __init__(self):
+        self.non_zero = 0
+        self.longest_line = 0
+        self.img = None
+
+        self.eps = 3
+        self.min_pts = 3
+
+    @property
+    def img_height(self) -> int:
+        return self.img.shape[0]
+
+    @property
+    def img_width(self) -> int:
+        return self.img.shape[1]
+
+    @property
+    def img_pixels(self) -> int:
+        return self.img_height * self.img_width
+
+    # Simplify bounds checking
+    def white_px(self, x: int, y: int) -> bool:
+        if x < 0 or y < 0 or x >= self.img_width or y >= self.img_height:
+            return False
+        return self.img[y, x] > 127
+
+    def reset(self):
+        self.non_zero = 0
+        self.longest_line = 0
+        self.img = None
+
+    def count_non_zero(self) -> float:
+        for y in range(self.img_height):
+            for x in range(self.img_width):
+                self.non_zero += self.white_px(x, y)
+
+    def non_zero_signal(self):
+        non_zero_ratio = self.non_zero / self.img_pixels
+
+        return min(non_zero_ratio, 0.1) / 0.1
+
+    def color_line(self, x, y, labels, color) -> None:
+        if x < 0 or y < 0 or x >= self.img_width or y >= self.img_height:
+            return
+        if labels[y][x]:
+            return
+        if not self.white_px(x, y):
+            return
+
+        labels[y][x] = color
+
+        for i in range(8):
+            angle = math.pi * (i / 4)
+            dx = round(math.cos(angle))
+            dy = round(math.sin(angle))
+            self.color_line(x+dx, y+dy, labels, color)
+
+    def find_longest_line(self):
+        used = {0}
+        labels = [[0 for _ in range(self.img_width)] for _
+                  in range(self.img_height)]
+
+        for x in range(self.img_width):
+            for y in range(self.img_height):
+                if labels[y][x]:
+                    continue
+                if self.white_px(x, y):
+                    next_color = max(used) + 1
+                    used.add(next_color)
+                    self.color_line(x, y, labels, next_color)
+
+        lengths = {0: 0}
+
+        for x in range(self.img_width):
+            for y in range(self.img_height):
+                color = labels[y][x]
+                if color:
+                    lengths[color] = lengths.get(color, 0) + 1
+
+        self.longest_line = max(lengths.values())
+        print(f'longest_line={self.longest_line}')
+
+    def longest_line_signal(self):
+        max_len = (self.img_pixels * 0.015)
+        return min(self.longest_line, max_len) / max_len
+
+    def is_core(self, x, y):
+        whites = 0
+        for cx in range(x-self.eps, x+self.eps+1):
+            for cy in range(y-self.eps, y+self.eps+1):
+                if (cx, cy) == (x, y):
+                    continue
+                whites += self.white_px(cx, cy)
+
+        return whites > self.min_pts
+
+    def scan_px(self, x, y, labels, color) -> bool:
+
+        if not self.is_core(x, y):
+            return False
+
+        scanned = set()
+        to_scan = {(x, y,)}
+
+        labels[y][x] = color
+
+        while to_scan:
+            item = to_scan.pop()
+            scanned.add(item)
+
+            x, y = item
+
+            lx = max(x-self.eps, 0)
+            rx = min(x+self.eps+1, self.img_width)
+            ly = max(y-self.eps, 0)
+            ry = min(y+self.eps+1, self.img_height)
+
+            for cx in range(lx, rx):
+                for cy in range(ly, ry):
+                    if (cx, cy) == (x, y):
+                        continue
+                    if self.white_px(cx, cy):
+                        labels[cy][cx] = color
+                        to_scan.add((cx, cy,))
+
+        return True
+
+    def m(self, labels, p, q, color) -> float:
+        total = 0
+        for x in range(self.img_width):
+            xp = x**p
+            for y in range(self.img_height):
+                total += xp * y**q * (labels[y][x] == color)
+        return total
+
+    def mu(self, labels, xt, yt, p, q, color) -> float:
+        total = 0
+        for x in range(self.img_width):
+            xp = (x - xt)**p
+            for y in range(self.img_height):
+                yp = (y-yt)**q
+                total += xp * yp * (labels[y][x] == color)
+        return total
+
+    def compute_cluster_signals(self, labels, color) -> list[float]:
+        m00 = self.m(labels, 0, 0, color)
+        m10 = self.m(labels, 1, 0, color)
+        m01 = self.m(labels, 0, 1, color)
+
+        xt = m10 / m00
+        yt = m01 / m00
+
+        mu20 = self.mu(labels, xt, yt, 2, 0, color)
+        mu02 = self.mu(labels, xt, yt, 0, 2, color)
+        mu11 = self.mu(labels, xt, yt, 1, 1, color)
+
+        left = 0.5 * (mu20 + mu02)
+        right = 0.5 * math.sqrt(4 * mu11**2 + (mu20 - mu02)**2)
+
+        mu_max = left + right
+        mu_min = left - right
+
+        return mu_min / mu_max
+
+    def cluster_signals(self):
+        current_color = 1
+        labels = [[0 for _ in range(self.img_width)] for _
+                  in range(self.img_height)]
+        for x in range(self.img_width):
+            for y in range(self.img_height):
+                if labels[y][x]:
+                    continue
+                current_color += self.scan_px(x, y, labels, current_color)
+
+        counts = {0: 0}
+
+        for x in range(self.img_width):
+            for y in range(self.img_height):
+                color = labels[y][x]
+                if color:
+                    counts[color] = counts.get(color, 0) + 1
+
+        largest_cluster = 0
+
+        for k, v in counts.values():
+            if v > counts[largest_cluster]:
+                largest_cluster = k
+
+        if not largest_cluster:
+            return [0.0]
+
+        return self.compute_cluster_signals(labels, largest_cluster)
+
     def predict(self, img) -> float:
-        canny_img = cv.Canny(img, 150, 200)
+        self.reset()
+        self.img = cv.Canny(img, 150, 200)
 
-        non_zero_ratio = 0
+        self.count_non_zero()
+        self.find_longest_line()
 
-        for y in range(canny_img.shape[0]):
-            for x in range(canny_img.shape[1]):
-                non_zero_ratio += canny_img[y, x] > 127
+        sigs = [self.non_zero_signal(),
+                self.longest_line_signal(),
+                ]  # + self.cluster_signals()
 
-        non_zero_ratio /= img.shape[0] * img.shape[1]
+        print(sigs)
 
-        non_zero_ratio = min(non_zero_ratio, 0.1)
-
-        return non_zero_ratio / 0.1
+        return sigs[0]
