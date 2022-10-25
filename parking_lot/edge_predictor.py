@@ -95,40 +95,33 @@ class EdgePredictor:
         whites = 0
         for cx in range(x-self.eps, x+self.eps+1):
             for cy in range(y-self.eps, y+self.eps+1):
-                if (cx, cy) == (x, y):
-                    continue
-                whites += self.white_px(cx, cy)
+                whites += (cx, cy) != (x, y) and self.white_px(cx, cy)
 
-        return whites > self.min_pts
+        return whites >= self.min_pts
 
-    def scan_px(self, x, y, labels, color) -> bool:
+    def scan_px(self, x, y, labels, color, core_check=True) -> bool:
 
-        if not self.is_core(x, y):
+        if not self.white_px(x, y) or labels[y][x]:
             return False
 
-        scanned = set()
-        to_scan = {(x, y,)}
+        if core_check and not self.is_core(x, y):
+            return False
 
         labels[y][x] = color
 
-        while to_scan:
-            item = to_scan.pop()
-            scanned.add(item)
+        lx = max(x-self.eps, 0)
+        rx = min(x+self.eps+1, self.img_width)
+        uy = max(y-self.eps, 0)
+        ly = min(y+self.eps+1, self.img_height)
 
-            x, y = item
-
-            lx = max(x-self.eps, 0)
-            rx = min(x+self.eps+1, self.img_width)
-            ly = max(y-self.eps, 0)
-            ry = min(y+self.eps+1, self.img_height)
-
-            for cx in range(lx, rx):
-                for cy in range(ly, ry):
-                    if (cx, cy) == (x, y):
-                        continue
-                    if self.white_px(cx, cy):
-                        labels[cy][cx] = color
-                        to_scan.add((cx, cy,))
+        for cx in range(lx, rx):
+            for cy in range(uy, ly):
+                if (cx, cy) == (x, y):
+                    continue
+                if self.is_core(cx, cy):
+                    self.scan_px(cx, cy, labels, color, core_check=False)
+                elif not labels[cy][cx]:
+                    labels[cy][cx] = color
 
         return True
 
@@ -167,7 +160,9 @@ class EdgePredictor:
         mu_max = left + right
         mu_min = left - right
 
-        return mu_min / mu_max
+        sig1 = mu_min / mu_max if mu_max != 0 else 0
+
+        return [sig1]
 
     def cluster_signals(self):
         current_color = 1
@@ -175,8 +170,6 @@ class EdgePredictor:
                   in range(self.img_height)]
         for x in range(self.img_width):
             for y in range(self.img_height):
-                if labels[y][x]:
-                    continue
                 current_color += self.scan_px(x, y, labels, current_color)
 
         counts = {0: 0}
@@ -189,12 +182,18 @@ class EdgePredictor:
 
         largest_cluster = 0
 
-        for k, v in counts.values():
+        for k, v in counts.items():
             if v > counts[largest_cluster]:
                 largest_cluster = k
 
         if not largest_cluster:
             return [0.0]
+
+        print('[')
+        for row in labels:
+            row = ''.join([str(i) if i else ' ' for i in row])
+            print(f'    {row}')
+        print(']')
 
         return self.compute_cluster_signals(labels, largest_cluster)
 
@@ -207,7 +206,7 @@ class EdgePredictor:
 
         sigs = [self.non_zero_signal(),
                 self.longest_line_signal(),
-                ]  # + self.cluster_signals()
+                ] + self.cluster_signals()
 
         print(sigs)
 
