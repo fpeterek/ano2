@@ -116,7 +116,7 @@ class EdgePredictor:
 
         for cx in range(lx, rx):
             for cy in range(uy, ly):
-                if (cx, cy) == (x, y):
+                if (cx, cy) == (x, y) or not self.white_px(cx, cy):
                     continue
                 if self.is_core(cx, cy):
                     self.scan_px(cx, cy, labels, color, core_check=False)
