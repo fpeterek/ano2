@@ -27,4 +27,6 @@ class CombinedSignaller:
         hog = self.hog_predict(img)
         edge = self.edge_pred.predict(img)
 
-        return np.array([lbp, hog, edge])
+        sigs = [lbp, hog] + edge
+
+        return np.array(sigs)

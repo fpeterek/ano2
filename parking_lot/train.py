@@ -104,7 +104,7 @@ def train_final_classifier(
     mlp = sknn.MLPClassifier(
             solver='lbfgs',
             alpha=0.1,
-            hidden_layer_sizes=(4, 4),
+            hidden_layer_sizes=(8, ),
             random_state=350)
 
     mlp.fit(signals, labels)

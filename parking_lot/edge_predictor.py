@@ -85,7 +85,7 @@ class EdgePredictor:
                     lengths[color] = lengths.get(color, 0) + 1
 
         self.longest_line = max(lengths.values())
-        print(f'longest_line={self.longest_line}')
+        # print(f'longest_line={self.longest_line}')
 
     def longest_line_signal(self):
         max_len = (self.img_pixels * 0.015)
@@ -189,15 +189,15 @@ class EdgePredictor:
         if not largest_cluster:
             return [0.0]
 
-        print('[')
-        for row in labels:
-            row = ''.join([str(i) if i else ' ' for i in row])
-            print(f'    {row}')
-        print(']')
+        # print('[')
+        # for row in labels:
+        #     row = ''.join([str(i) if i else ' ' for i in row])
+        #     print(f'    {row}')
+        # print(']')
 
         return self.compute_cluster_signals(labels, largest_cluster)
 
-    def predict(self, img) -> float:
+    def predict(self, img) -> list[float]:
         self.reset()
         self.img = cv.Canny(img, 150, 200)
 
@@ -208,6 +208,6 @@ class EdgePredictor:
                 self.longest_line_signal(),
                 ] + self.cluster_signals()
 
-        print(sigs)
+        # print(sigs)
 
-        return sigs[0]
+        return sigs
