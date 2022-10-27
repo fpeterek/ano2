@@ -6,38 +6,37 @@ import torch.nn as nn
 import cv2 as cv
 
 from nn import Net
+from parking_lot.torch_ds import CarParkDS
 
 
 transform = transforms.Compose(
-    [transforms.ToTensor(),
-     # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-     ])
+    [
+        transforms.Grayscale(),
+        transforms.ToTensor(),
+        transforms.Normalize((0.5), (0.5)),
+    ])
 
 batch_size = 4
 
-trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
-                                        download=True, transform=transform)
+trainset = CarParkDS(occupied_dir='data/train_images/full',
+                     empty_dir='data/train_images/free',
+                     transform=transform)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                           shuffle=True, num_workers=2)
 
-testset = torchvision.datasets.CIFAR10(root='./data', train=False,
-                                       download=True, transform=transform)
+testset = CarParkDS(occupied_dir='data/train_images/full',
+                    empty_dir='data/train_images/free',
+                    transform=transform)
 testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
-                                         shuffle=False, num_workers=2)
+                                         shuffle=True, num_workers=2)
 
-classes = ('plane', 'car', 'bird', 'cat',
-           'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+classes = ('empty', 'occupied')
 
 ds_size = len(testset)
 print(f'{ds_size=}')
 
-# dataiter = iter(trainloader)
-# images, labels = dataiter.next()
-# cv.namedWindow('Jebat Go', 0)
-# for i, img in enumerate(images):
-#     print(f'Label: {classes[labels[i]]}')
-#     cv.imshow('Jebat Go', img.numpy().transpose(1, 2, 0))
-#     cv.waitKey(0)
+# alexnet = torch.hub.load('pytorch/vision:v0.10.0', 'alexnet',
+#                          pretrained=True)
 
 net = Net()
 
@@ -46,8 +45,8 @@ optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
 # print('Training...')
 
-if False:
-    for epoch in range(4):  # loop over the dataset multiple times
+if True:
+    for epoch in range(2):  # loop over the dataset multiple times
 
         print(f'{epoch=}')
 
@@ -67,8 +66,8 @@ if False:
 
             # print statistics
             running_loss += loss.item()
-            if i % 2000 == 1999:    # print every 2000 mini-batches
-                print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 2000:.3f}')
+            if i % 200 == 199:    # print every 2000 mini-batches
+                print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 200:.3f}')
                 running_loss = 0.0
 
     print('Finished Training')

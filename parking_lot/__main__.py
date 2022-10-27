@@ -11,6 +11,7 @@ import sklearn.neural_network as sknn
 import util
 import conf
 from combined_signaller import CombinedSignaller
+from cnn import Net
 
 
 def load_coords(filename: str):
@@ -74,9 +75,10 @@ def process_img(
 
         signals = signaller.get_signals(place)
 
-        mlp_pred = classifier.predict(np.asarray([signals]))
+        # mlp_pred = classifier.predict(np.asarray([signals]))
 
-        occupied = mlp_pred[0]
+        # occupied = mlp_pred[0]
+        occupied = signals
 
         res.append(occupied)
         if occupied:
@@ -100,8 +102,10 @@ def classify(lbp_model, hog_model, final_classifier_model) -> None:
     test_images = sorted([img for img in glob.glob('data/test_images/*.jpg')])
     lbp_booster = util.load_booster(lbp_model)
     hog_svm = cv.ml.SVM.load(hog_model)
+    cnn = Net()
+    cnn.from_file('models/cnn.pt')
 
-    signaller = CombinedSignaller(lbp=lbp_booster, hog=hog_svm)
+    signaller = CombinedSignaller(lbp=lbp_booster, hog=hog_svm, cnn=cnn)
     classifier = util.load_final_classifier(final_classifier_model)
 
     total_successful = 0
