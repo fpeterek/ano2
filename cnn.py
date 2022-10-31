@@ -45,7 +45,7 @@ optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
 # print('Training...')
 
-if True:
+if False:
     for epoch in range(2):  # loop over the dataset multiple times
 
         print(f'{epoch=}')
@@ -78,6 +78,8 @@ net.load_state_dict(torch.load('models/cnn.pt'))
 
 dataiter = iter(testloader)
 images, labels = dataiter.next()
+print(type(images))
+print(images)
 
 outputs = net(images)
 

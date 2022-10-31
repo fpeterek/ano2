@@ -27,7 +27,7 @@ class CombinedSignaller:
                 transforms.Normalize((0.5), (0.5)),
             ])
         transformed = transform(im).unsqueeze(0)
-        outputs = self.cnn([transformed])
+        outputs = self.cnn(transformed)
         _, predictions = torch.max(outputs, 1)
         return predictions[0]
 
