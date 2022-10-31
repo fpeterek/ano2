@@ -27,6 +27,7 @@ class CombinedSignaller:
         self.edge_pred = EdgePredictor()
 
     def get_signals(self, img) -> np.array:
+        # TODO: Combine signals
         return self.cnn_predict(img)
         # lbp = self.lbp_predict(img)
         # hog = self.hog_predict(img)
