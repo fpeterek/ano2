@@ -5,7 +5,16 @@ import cv2 as cv
 import numpy as np
 import xgboost as xgb
 import sklearn.neural_network as sknn
+import skimage.feature as skf
+import torch
+import torchvision.transforms as transforms
+import torch.optim as optim
+import torch.nn as nn
+from PIL import Image
 
+from cnn import Net
+
+from torch_ds import CarParkDS
 import util
 from combined_signaller import CombinedSignaller
 
@@ -76,6 +85,56 @@ def train_lbp(free_set: str, occupied_set: str, model_name: str):
 
 
 @click.command()
+@click.option('--free-set', help='Free parking spaces')
+@click.option('--occupied-set', help='Occupied parking spaces')
+@click.option('--epochs', help='Number of training epochs')
+@click.option('--model-name', help='Output path')
+def train_cnn(
+        free_set: str,
+        occupied_set: str,
+        epochs: int,
+        model_name: str,
+        ):
+
+    transform = util.cnn_transform()
+
+    batch_size = 4
+
+    trainset = CarParkDS(occupied_dir='data/train_images/full',
+                         empty_dir='data/train_images/free',
+                         transform=transform)
+    trainloader = torch.utils.data.DataLoader(
+            trainset, batch_size=batch_size, shuffle=True, num_workers=2)
+
+    net = Net()
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+
+    for epoch in range(2):  # loop over the dataset multiple times
+
+        print(f'{epoch=}')
+
+        running_loss = 0.0
+        for i, data in enumerate(trainloader, 0):
+            inputs, labels = data
+            optimizer.zero_grad()
+            outputs = net(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+
+            running_loss += loss.item()
+            if i % 200 == 199:
+                print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 200:.3f}')
+                running_loss = 0.0
+
+    print('Finished Training')
+
+    torch.save(net.state_dict(), model_name)
+
+
+@click.command()
 @click.option('--free-set', help='Folder with images of free parking spaces')
 @click.option('--occupied-set',
               help='Folder with images of occupied parking spaces')
@@ -121,6 +180,7 @@ def main() -> None:
 main.add_command(train_hog)
 main.add_command(train_lbp)
 main.add_command(train_final_classifier)
+main.add_command(train_cnn)
 
 
 if __name__ == '__main__':

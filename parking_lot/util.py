@@ -7,6 +7,8 @@ import cv2 as cv
 import skimage.feature as skf
 import xgboost as xgb
 import sklearn.neural_network as sknn
+from PIL import Image
+import torchvision.transforms as transforms
 
 import conf
 
@@ -120,6 +122,21 @@ def create_hog_descriptor() -> cv.HOGDescriptor:
             gamma_correction,
             nlevels,
             signed_gradients)
+
+
+def lbp_image(img):
+    img = skf.local_binary_pattern(img, 3, 8*3, 'uniform')
+    return Image.fromarray(img)
+
+
+def cnn_transform():
+    return transforms.Compose(
+            [
+                transforms.Grayscale(),
+                transforms.Lambda(lbp_image),
+                transforms.ToTensor(),
+                transforms.Normalize((0.5), (0.5)),
+            ])
 
 
 def create_lbp_signaller():

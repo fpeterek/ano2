@@ -2,8 +2,9 @@
 ## Train
 
 ```sh
-python3 train.py train-lbp --free-set train_images/free --occupied-set train_images/full --model-name lbp.json
-python3 train.py train-hog --free-set train_images/free --occupied-set train_images/full --model-name hog.yml
+python3 parking_lot/train.py train-lbp --free-set train_images/free --occupied-set train_images/full --model-name lbp.json
+python3 parking_lot/train.py train-hog --free-set train_images/free --occupied-set train_images/full --model-name hog.yml
+python3 parking_lot/train.py train-cnn --free-set data/train_images/free --occupied-set data/train_images/full --epochs 2 --model-name 'cnn.model'
 
 python3 parking_lot/train.py train-final-classifier --free-set data/train_images/free --occupied-set data/train_images/full --hog-model models/hog.yml --lbp-model models/lbp.json --model-name models/classifier.model
 ```

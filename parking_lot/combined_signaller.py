@@ -1,8 +1,5 @@
 import xgboost as xgb
 import numpy as np
-import torch
-import torchvision.transforms as transforms
-from PIL import Image
 
 import util
 from edge_predictor import EdgePredictor
@@ -19,17 +16,7 @@ class CombinedSignaller:
         return self.hog_model.predict(np.matrix(hog_sigs))[1][0][0]
 
     def cnn_predict(self, img):
-        im = Image.fromarray(np.uint8(img))
-        transform = transforms.Compose(
-            [
-                transforms.Grayscale(),
-                transforms.ToTensor(),
-                transforms.Normalize((0.5), (0.5)),
-            ])
-        transformed = transform(im).unsqueeze(0)
-        outputs = self.cnn(transformed)
-        _, predictions = torch.max(outputs, 1)
-        return predictions[0]
+        return self.cnn.predict(img)
 
     def __init__(self, hog, lbp, cnn):
         self.hog = util.create_hog_descriptor()
