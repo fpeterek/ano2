@@ -12,15 +12,17 @@ class Net(nn.Module):
     def __init__(self):
         super().__init__()
         self.conv1 = nn.Conv2d(1, 32, 3)
+        self.norm1 = nn.BatchNorm2d(32)
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(32, 64, 3)
+        self.norm2 = nn.BatchNorm2d(64)
         self.fc1 = nn.LazyLinear(120)
         self.fc2 = nn.LazyLinear(84)
         self.fc3 = nn.LazyLinear(10)
 
     def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
+        x = self.pool(F.relu(self.norm1(self.conv1(x))))
+        x = self.pool(F.relu(self.norm2(self.conv2(x))))
         x = torch.flatten(x, 1)  # flatten all dimensions except batch
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
@@ -55,4 +57,4 @@ class CNNSignaller:
         label = int(label[0][0])
         prob = prob if label else 1-prob
 
-        return prob
+        return label  # prob

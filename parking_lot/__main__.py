@@ -95,14 +95,15 @@ def process_img(
 @click.command()
 @click.option('--lbp-model', help='Path to XGB model used in prediction')
 @click.option('--hog-model', help='Path to SVM model used in prediction')
+@click.option('--cnn-model', help='Path to CNN model used in prediction')
 @click.option('--final-classifier-model', help='Path to MLP model')
-def classify(lbp_model, hog_model, final_classifier_model) -> None:
+def classify(lbp_model, hog_model, cnn_model, final_classifier_model) -> None:
 
     pkm_coordinates = load_coords('data/parking_map_python.txt')
     test_images = sorted([img for img in glob.glob('data/test_images/*.jpg')])
     lbp_booster = util.load_booster(lbp_model)
     hog_svm = cv.ml.SVM.load(hog_model)
-    cnn = CNNSignaller('models/cnn.model')
+    cnn = CNNSignaller(cnn_model)
 
     signaller = CombinedSignaller(lbp=lbp_booster, hog=hog_svm, cnn=cnn)
     classifier = util.load_final_classifier(final_classifier_model)
