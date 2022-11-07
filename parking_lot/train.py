@@ -5,18 +5,16 @@ import cv2 as cv
 import numpy as np
 import xgboost as xgb
 import sklearn.neural_network as sknn
-import skimage.feature as skf
 import torch
-import torchvision.transforms as transforms
 import torch.optim as optim
 import torch.nn as nn
-from PIL import Image
 
 from cnn import Net
 
 from torch_ds import CarParkDS
 import util
 from combined_signaller import CombinedSignaller
+from edge_predictor import EdgePredictor
 
 
 @click.command()
@@ -126,12 +124,45 @@ def train_cnn(
 
             running_loss += loss.item()
             if i % 200 == 199:
-                print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 200:.3f}')
+                print(f'[{epoch + 1}, {i + 1:5d}]',
+                      f'loss: {running_loss / 200:.3f}')
                 running_loss = 0.0
 
     print('Finished Training')
 
     torch.save(net.state_dict(), model_name)
+
+
+@click.command()
+@click.option('--free-set', help='Folder with images of free parking spaces')
+@click.option('--occupied-set',
+              help='Folder with images of occupied parking spaces')
+@click.option('--model-name', help='Name of model')
+def train_edge_classifier(
+        free_set: str,
+        occupied_set: str,
+        model_name: str):
+
+    signaller = EdgePredictor()
+
+    signals, labels = util.load_training_ds(
+            signaller=signaller.get_signals,
+            free_folder=free_set,
+            occupied_folder=occupied_set)
+
+    signals = np.asarray(signals)
+    labels = np.array(labels)
+
+    mlp = sknn.MLPClassifier(
+            solver='lbfgs',
+            alpha=0.1,
+            hidden_layer_sizes=(6, ),
+            random_state=350)
+
+    mlp.fit(signals, labels)
+
+    with open(model_name, 'wb') as file:
+        pickle.dump(mlp, file)
 
 
 @click.command()

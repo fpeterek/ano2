@@ -106,7 +106,7 @@ def classify(lbp_model, hog_model, cnn_model, final_classifier_model) -> None:
     cnn = CNNSignaller(cnn_model)
 
     signaller = CombinedSignaller(lbp=lbp_booster, hog=hog_svm, cnn=cnn)
-    classifier = util.load_final_classifier(final_classifier_model)
+    classifier = util.load_mlp(final_classifier_model)
 
     total_successful = 0
     total = 0

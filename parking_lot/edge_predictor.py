@@ -1,9 +1,12 @@
 import math
 
 import cv2 as cv
+import numpy as np
+
+import util
 
 
-class EdgePredictor:
+class EdgeSignaller:
 
     def __init__(self):
         self.non_zero = 0
@@ -211,3 +214,21 @@ class EdgePredictor:
         # print(sigs)
 
         return sigs
+
+    def __call__(self, img) -> list[float]:
+        return self.predict(img)
+
+
+class EdgePredictor:
+    def __init__(self, mlp):
+        self.signaller = EdgeSignaller()
+        self.mlp = mlp
+
+    def predict(self, img):
+        sigs = self.signaller(img)
+        mlp_pred = self.mlp.predict(np.asarray([sigs]))
+        return mlp_pred[0]
+
+    @staticmethod
+    def from_file(filename: str):
+        util.load_mlp(filename)

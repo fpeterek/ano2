@@ -195,6 +195,6 @@ def load_booster(model_name: str) -> xgb.Booster:
     return bst
 
 
-def load_final_classifier(model_name: str) -> sknn.MLPClassifier:
+def load_mlp(model_name: str) -> sknn.MLPClassifier:
     with open(model_name, 'rb') as file:
         return pickle.load(file)
