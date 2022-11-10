@@ -3,10 +3,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from PIL import Image
-import skimage.feature as skf
+import torchvision.models as models
 
 import util
 
+
+# TODO: Dropout
+# TODO: Compare MaxPooling and AvgPooling
 
 class Net(nn.Module):
     def __init__(self):
@@ -53,6 +56,37 @@ class CNNSignaller:
         img = Image.fromarray(np.uint8(img))
         transformed = self.transform(img).unsqueeze(0)
         prob, label = F.softmax(self.model(transformed), dim=1).topk(1)
+        prob = float(prob[0][0])
+        label = int(label[0][0])
+        prob = prob if label else 1-prob
+
+        return label  # prob
+
+
+class ResnetSignaller:
+    def __init__(self, model):
+        self.model = None
+
+        if isinstance(model, str):
+            self.model = models.resnet18(pretrained=True)
+            num_features = self.model.fc.in_features
+            self.model.fc = nn.Linear(num_features, 2)
+            self.model.load_state_dict(torch.load(model))
+            self.model.eval()
+        elif isinstance(model, models.ResNet):
+            self.model = model
+        else:
+            raise TypeError('Invalid value for argument model')
+
+        self.transform = util.resnet_transform()
+
+    def predict(self, img):
+        img = Image.fromarray(np.uint8(img))
+        transformed = self.transform(img).unsqueeze(0)
+        prob, label = F.softmax(self.model(transformed), dim=1).topk(1)
+        # print(prob)
+        # print(label)
+
         prob = float(prob[0][0])
         label = int(label[0][0])
         prob = prob if label else 1-prob

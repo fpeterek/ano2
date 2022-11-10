@@ -129,6 +129,27 @@ def lbp_image(img):
     return Image.fromarray(img)
 
 
+def to_rgb(img):
+    # img = Image.fromarray(img)
+    rgbimg = Image.new("RGB", img.size)
+    rgbimg.paste(img)
+    return rgbimg
+
+
+def resnet_transform():
+    return transforms.Compose(
+            [
+                transforms.Grayscale(),
+                # transforms.Lambda(lbp_image),
+                transforms.Lambda(to_rgb),
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406],
+                                     [0.229, 0.224, 0.225]),
+            ])
+
+
 def cnn_transform():
     return transforms.Compose(
             [

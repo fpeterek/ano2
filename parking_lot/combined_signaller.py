@@ -24,7 +24,7 @@ class CombinedSignaller:
         self.hog_model = hog
         self.lbp_model = lbp
         self.cnn = cnn
-        self.edge_pred = EdgePredictor()
+        self.edge_pred = EdgePredictor(None)
 
     def get_signals(self, img) -> np.array:
         # TODO: Combine signals

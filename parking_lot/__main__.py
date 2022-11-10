@@ -11,7 +11,7 @@ import sklearn.neural_network as sknn
 import util
 import conf
 from combined_signaller import CombinedSignaller
-from cnn import CNNSignaller
+from cnn import CNNSignaller, ResnetSignaller
 
 
 def load_coords(filename: str):
@@ -103,7 +103,8 @@ def classify(lbp_model, hog_model, cnn_model, final_classifier_model) -> None:
     test_images = sorted([img for img in glob.glob('data/test_images/*.jpg')])
     lbp_booster = util.load_booster(lbp_model)
     hog_svm = cv.ml.SVM.load(hog_model)
-    cnn = CNNSignaller(cnn_model)
+    # cnn = CNNSignaller(cnn_model)
+    cnn = ResnetSignaller(cnn_model)
 
     signaller = CombinedSignaller(lbp=lbp_booster, hog=hog_svm, cnn=cnn)
     classifier = util.load_mlp(final_classifier_model)
