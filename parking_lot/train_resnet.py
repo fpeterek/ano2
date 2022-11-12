@@ -10,17 +10,8 @@ import util as util
 
 resnet18 = models.resnet18(pretrained=True)
 
-for name, child in resnet18.named_children():
-    print(f'{name=}')
-
-for param in resnet18.parameters():
-    # print(f'{param=}')
-    param.requires_grad = False
-
-print(resnet18.fc)
 num_features = resnet18.fc.in_features
 resnet18.fc = nn.Linear(num_features, 2)
-print(resnet18.fc)
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(resnet18.fc.parameters(), lr=0.001, momentum=0.9)
