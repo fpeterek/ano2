@@ -9,19 +9,19 @@ import util
 
 
 # TODO: Dropout
-# TODO: Compare MaxPooling and AvgPooling
 
 class Net(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = nn.Conv2d(1, 32, 3)
-        self.norm1 = nn.BatchNorm2d(32)
+        self.conv1 = nn.Conv2d(1, 64, 3)
+        self.norm1 = nn.BatchNorm2d(64)
         self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(32, 64, 3)
-        self.norm2 = nn.BatchNorm2d(64)
+        self.conv2 = nn.Conv2d(64, 128, 3)
+        self.norm2 = nn.BatchNorm2d(128)
         self.fc1 = nn.LazyLinear(120)
         self.fc2 = nn.LazyLinear(84)
         self.fc3 = nn.LazyLinear(10)
+        self.dropout = nn.Dropout(0.5)
 
     def forward(self, x):
         x = self.pool(F.relu(self.norm1(self.conv1(x))))
@@ -29,6 +29,7 @@ class Net(nn.Module):
         x = torch.flatten(x, 1)  # flatten all dimensions except batch
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
+        x = self.dropout(x)
         x = self.fc3(x)
         return x
 
@@ -51,6 +52,7 @@ class CNNSignaller:
             raise TypeError('Invalid value for argument model',
                             f'({type(model)})')
 
+        self.model.eval()
         self.transform = util.cnn_transform()
 
     def predict(self, img):
@@ -73,12 +75,12 @@ class ResnetSignaller:
             num_features = self.model.fc.in_features
             self.model.fc = nn.Linear(num_features, 2)
             self.model.load_state_dict(torch.load(model))
-            self.model.eval()
         elif isinstance(model, models.ResNet):
             self.model = model
         else:
             raise TypeError('Invalid value for argument model')
 
+        self.model.eval()
         self.transform = util.resnet_transform()
 
     def predict(self, img):

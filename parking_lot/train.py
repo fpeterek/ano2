@@ -110,7 +110,10 @@ def train_cnn(
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
-    for epoch in range(2):  # loop over the dataset multiple times
+    best_loss = 1.0
+    best_model = {}
+
+    for epoch in range(3):  # loop over the dataset multiple times
 
         print(f'{epoch=}')
 
@@ -127,11 +130,13 @@ def train_cnn(
             if i % 200 == 199:
                 print(f'[{epoch + 1}, {i + 1:5d}]',
                       f'loss: {running_loss / 200:.3f}')
+                if running_loss < best_loss:
+                    best_model = net.state_dict().copy()
                 running_loss = 0.0
 
     print('Finished Training')
 
-    torch.save(net.state_dict(), model_name)
+    torch.save(best_model, model_name)
 
 
 @click.command()

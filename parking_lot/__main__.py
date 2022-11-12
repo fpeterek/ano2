@@ -76,10 +76,10 @@ def process_img(
 
         signals = signaller.get_signals(place)
 
-        mlp_pred = classifier.predict(np.asarray([signals]))
+        # mlp_pred = classifier.predict(np.asarray([signals]))
 
-        occupied = mlp_pred[0]
-        # occupied = signals
+        # occupied = mlp_pred[0]
+        occupied = signals
 
         res.append(occupied)
         if occupied:

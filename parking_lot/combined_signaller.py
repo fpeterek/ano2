@@ -27,10 +27,11 @@ class CombinedSignaller:
 
     def get_signals(self, img) -> np.array:
         cnn = self.cnn_predict(img)
-        lbp = self.lbp_predict(img)
-        hog = self.hog_predict(img)
-        edge = self.edge_pred.predict(img)
+        return cnn
+        # lbp = self.lbp_predict(img)
+        # hog = self.hog_predict(img)
+        # edge = self.edge_pred.predict(img)
 
-        sigs = [lbp, hog, edge]
+        # sigs = [lbp, hog, edge]
 
-        return np.array(sigs)
+        # return np.array(sigs)
