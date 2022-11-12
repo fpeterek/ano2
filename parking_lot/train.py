@@ -14,7 +14,8 @@ from cnn import Net
 from torch_ds import CarParkDS
 import util
 from combined_signaller import CombinedSignaller
-from edge_predictor import EdgePredictor
+from edge_predictor import EdgeSignaller, EdgePredictor
+from cnn import CNNSignaller
 
 
 @click.command()
@@ -143,13 +144,14 @@ def train_edge_classifier(
         occupied_set: str,
         model_name: str):
 
-    signaller = EdgePredictor()
+    signaller = EdgeSignaller()
 
     signals, labels = util.load_training_ds(
-            signaller=signaller.get_signals,
+            signaller=signaller,
             free_folder=free_set,
             occupied_folder=occupied_set)
 
+    signals = [np.array(sigs) for sigs in signals]
     signals = np.asarray(signals)
     labels = np.array(labels)
 
@@ -169,19 +171,26 @@ def train_edge_classifier(
 @click.option('--free-set', help='Folder with images of free parking spaces')
 @click.option('--occupied-set',
               help='Folder with images of occupied parking spaces')
+@click.option('--cnn-model', help='Name of CNN model')
 @click.option('--hog-model', help='Name of HOG model')
 @click.option('--lbp-model', help='Name of LBP model')
+@click.option('--edge-model', help='Name of edge model')
 @click.option('--model-name', help='Name of model')
 def train_final_classifier(
         free_set: str,
         occupied_set: str,
+        cnn_model: str,
         hog_model: str,
         lbp_model: str,
+        edge_model: str,
         model_name: str):
 
+    cnn = CNNSignaller(cnn_model)
     lbp_model = util.load_booster(lbp_model)
     hog_model = cv.ml.SVM.load(hog_model)
-    signaller = CombinedSignaller(hog=hog_model, lbp=lbp_model)
+    edge_pred = EdgePredictor.from_file(edge_model)
+    signaller = CombinedSignaller(cnn=cnn, hog=hog_model, lbp=lbp_model,
+                                  edge_pred=edge_pred)
 
     signals, labels = util.load_training_ds(
             signaller=signaller.get_signals,
@@ -211,6 +220,7 @@ def main() -> None:
 main.add_command(train_hog)
 main.add_command(train_lbp)
 main.add_command(train_final_classifier)
+main.add_command(train_edge_classifier)
 main.add_command(train_cnn)
 
 

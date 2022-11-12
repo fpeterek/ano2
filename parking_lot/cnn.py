@@ -48,7 +48,8 @@ class CNNSignaller:
         elif isinstance(model, Net):
             self.model = model
         else:
-            raise TypeError('Invalid value for argument model')
+            raise TypeError('Invalid value for argument model',
+                            f'({type(model)})')
 
         self.transform = util.cnn_transform()
 

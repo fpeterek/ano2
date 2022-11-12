@@ -12,6 +12,7 @@ import util
 import conf
 from combined_signaller import CombinedSignaller
 from cnn import CNNSignaller, ResnetSignaller
+from edge_predictor import EdgePredictor
 
 
 def load_coords(filename: str):
@@ -75,10 +76,10 @@ def process_img(
 
         signals = signaller.get_signals(place)
 
-        # mlp_pred = classifier.predict(np.asarray([signals]))
+        mlp_pred = classifier.predict(np.asarray([signals]))
 
-        # occupied = mlp_pred[0]
-        occupied = signals
+        occupied = mlp_pred[0]
+        # occupied = signals
 
         res.append(occupied)
         if occupied:
@@ -96,17 +97,25 @@ def process_img(
 @click.option('--lbp-model', help='Path to XGB model used in prediction')
 @click.option('--hog-model', help='Path to SVM model used in prediction')
 @click.option('--cnn-model', help='Path to CNN model used in prediction')
+@click.option('--edge-model', help='Path to model used in prediction ' +
+              'derived from detected edges')
 @click.option('--final-classifier-model', help='Path to MLP model')
-def classify(lbp_model, hog_model, cnn_model, final_classifier_model) -> None:
+def classify(lbp_model,
+             hog_model,
+             cnn_model,
+             edge_model,
+             final_classifier_model) -> None:
 
     pkm_coordinates = load_coords('data/parking_map_python.txt')
     test_images = sorted([img for img in glob.glob('data/test_images/*.jpg')])
     lbp_booster = util.load_booster(lbp_model)
     hog_svm = cv.ml.SVM.load(hog_model)
-    # cnn = CNNSignaller(cnn_model)
-    cnn = ResnetSignaller(cnn_model)
+    cnn = CNNSignaller(cnn_model)
+    # cnn = ResnetSignaller(cnn_model)
+    edge_pred = EdgePredictor.from_file(edge_model)
 
-    signaller = CombinedSignaller(lbp=lbp_booster, hog=hog_svm, cnn=cnn)
+    signaller = CombinedSignaller(lbp=lbp_booster, hog=hog_svm, cnn=cnn,
+                                  edge_pred=edge_pred)
     classifier = util.load_mlp(final_classifier_model)
 
     total_successful = 0

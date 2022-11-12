@@ -145,6 +145,30 @@ class EdgeSignaller:
                 total += xp * yp * (labels[y][x] == color)
         return total
 
+    def compute_bounding_box_signal(self, labels, color) -> float:
+        l_x = len(labels[0])
+        r_x = 0
+        u_y = len(labels)
+        l_y = 0
+        for y, row in enumerate(labels):
+            for x, label in enumerate(row):
+                if label == color:
+                    l_x = min(l_x, x)
+                    r_x = max(r_x, x)
+                    u_y = min(u_y, y)
+                    l_y = max(l_y, y)
+
+        width = r_x - l_x
+        height = l_y - u_y
+
+        if width <= 0 or height <= 0:
+            return 0.0
+
+        area = width * height
+        img_area = len(labels[0]) * len(labels)
+
+        return min(0.3, area / img_area) / 0.3
+
     def compute_cluster_signals(self, labels, color) -> list[float]:
         m00 = self.m(labels, 0, 0, color)
         m10 = self.m(labels, 1, 0, color)
@@ -165,7 +189,7 @@ class EdgeSignaller:
 
         sig1 = mu_min / mu_max if mu_max != 0 else 0
 
-        return [sig1]
+        return [sig1, self.compute_bounding_box_signal(labels, color)]
 
     def cluster_signals(self):
         current_color = 1
@@ -190,7 +214,7 @@ class EdgeSignaller:
                 largest_cluster = k
 
         if not largest_cluster:
-            return [0.0]
+            return [0.0, 0.0]
 
         # print('[')
         # for row in labels:
@@ -205,15 +229,14 @@ class EdgeSignaller:
         self.img = cv.Canny(img, 150, 200)
 
         self.count_non_zero()
-        self.find_longest_line()
+        # self.find_longest_line()
 
-        sigs = [self.non_zero_signal(),
-                self.longest_line_signal(),
-                ] + self.cluster_signals()
+        # sigs = [self.non_zero_signal(),
+        #         self.longest_line_signal(),
+        #         ] + self.cluster_signals()
 
-        # print(sigs)
-
-        return sigs
+        # return sigs
+        return [self.non_zero_signal()]
 
     def __call__(self, img) -> list[float]:
         return self.predict(img)
@@ -226,9 +249,11 @@ class EdgePredictor:
 
     def predict(self, img):
         sigs = self.signaller(img)
-        mlp_pred = self.mlp.predict(np.asarray([sigs]))
-        return mlp_pred[0]
+        return sigs[0]
+        # mlp_pred = self.mlp.predict(np.asarray([sigs]))
+        # return mlp_pred[0]
 
     @staticmethod
     def from_file(filename: str):
-        util.load_mlp(filename)
+        mlp = util.load_mlp(filename)
+        return EdgePredictor(mlp)

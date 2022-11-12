@@ -1,13 +1,8 @@
-from torch.utils.data import Dataset, DataLoader
 import torch
-import matplotlib.pyplot as plt
 
 import torch.optim as optim
 import torch.nn as nn
-import torch.nn.functional as F
 import torchvision.models as models
-import torchvision
-import torchvision.transforms as transforms
 
 from torch_ds import CarParkDS
 import util as util
@@ -40,7 +35,7 @@ trainset = CarParkDS(occupied_dir='data/train_images/full',
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                           shuffle=True, num_workers=2)
 
-for epoch in range(2):  # loop over the dataset multiple times
+for epoch in range(4):  # loop over the dataset multiple times
 
     print(f'{epoch=}')
 
@@ -67,4 +62,3 @@ for epoch in range(2):  # loop over the dataset multiple times
 print('Finished Training')
 
 torch.save(resnet18.state_dict(), 'models/resnet.pt')
-
