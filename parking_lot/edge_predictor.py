@@ -255,5 +255,5 @@ class EdgePredictor:
 
     @staticmethod
     def from_file(filename: str):
-        mlp = util.load_mlp(filename)
-        return EdgePredictor(mlp)
+        # mlp = util.load_mlp(filename)
+        return EdgePredictor(None)

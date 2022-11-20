@@ -62,7 +62,7 @@ def hog_prediction(hog, svm, img):
 def process_img(
         img_name: str,
         signaller: CombinedSignaller,
-        classifier: sknn.MLPClassifier,
+        classifier: sknn.MLPClassifier | None,
         pkm_coordinates: list[list]) -> tuple[int, int]:
 
     img = cv.imread(img_name, 0)
@@ -74,12 +74,13 @@ def process_img(
     for coord in pkm_coordinates:
         place = extract_parking_space(img, coord)
 
-        signals = signaller.get_signals(place)
+        signals = signaller(place)
 
-        # mlp_pred = classifier.predict(np.asarray([signals]))
-
-        # occupied = mlp_pred[0]
-        occupied = signals
+        if classifier:
+            mlp_pred = classifier.predict(np.asarray([signals]))
+            occupied = mlp_pred[0]
+        else:
+            occupied = signals
 
         res.append(occupied)
         if occupied:
@@ -91,6 +92,29 @@ def process_img(
     cv.waitKey(0)
 
     return succ, total
+
+
+@click.command()
+@click.option('--cnn-model', help='Path to CNN model used in prediction')
+def cnn_classify(cnn_model):
+    pkm_coordinates = load_coords('data/parking_map_python.txt')
+    test_images = sorted([img for img in glob.glob('data/test_images/*.jpg')])
+    cnn = CNNSignaller(cnn_model)
+
+    total_successful = 0
+    total = 0
+
+    cv.namedWindow('Zpiceny eduroam', 0)
+    for img_name in test_images:
+        s, t = process_img(
+                img_name=img_name,
+                signaller=lambda pic: cnn(pic)[0],
+                classifier=None,
+                pkm_coordinates=pkm_coordinates)
+        total_successful += s
+        total += t
+
+    print(f'Total success rate: {total_successful / total}')
 
 
 @click.command()
@@ -139,8 +163,8 @@ def main() -> None:
     pass
 
 
-# TODO: Use LBP
 main.add_command(classify)
+main.add_command(cnn_classify)
 
 
 if __name__ == "__main__":

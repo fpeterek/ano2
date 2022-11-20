@@ -25,3 +25,6 @@ python3 parking_lot classify --lbp-model models/lbp.json --hog-model models/hog.
 
 python3 parking_lot/train.py train-edge-classifier --free-set data/train_images/free --occupied-set data/train_images/full --model-name edge.model
 python3 parking_lot classify --lbp-model models/lbp.json --hog-model models/hog.yml --final-classifier-model models/classifier.model --edge-model edge.model --cnn-model models/cnn.model
+python3 parking_lot cnn-classify --cnn-model models/cnn.model
+python3 parking_lot/train.py train-lbp --free-set data/enhanced/free --occupied-set data/enhanced/full --model-name lbp.json
+python3 parking_lot/train.py train-lbp --free-set data/enhanced/free --occupied-set data/enhanced/full --model-name lbp.json

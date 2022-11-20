@@ -66,7 +66,10 @@ class CNNSignaller:
         label = int(label[0][0])
         prob = prob if label else 1-prob
 
-        return label  # prob
+        return label, prob
+
+    def __call__(self, img):
+        return self.predict(img)
 
 
 class ResnetSignaller:
@@ -90,11 +93,12 @@ class ResnetSignaller:
         img = Image.fromarray(np.uint8(img))
         transformed = self.transform(img).unsqueeze(0)
         prob, label = F.softmax(self.model(transformed), dim=1).topk(1)
-        # print(prob)
-        # print(label)
 
         prob = float(prob[0][0])
         label = int(label[0][0])
         prob = prob if label else 1-prob
 
-        return label  # prob
+        return label, prob
+
+    def __call__(self, img):
+        return self.predict(img)
