@@ -16,34 +16,33 @@ def convert_img(path: str, outdir: str):
     light_file = f'{os.path.splitext(split[1])[0]}_light.png'
 
     dark_file = os.path.join(outdir, folder, dark_file)
+    darker_file = os.path.join(outdir, folder, darker_file)
+    light_file = os.path.join(outdir, folder, light_file)
 
-    cv.namedWindow('dark', 0)
-    cv.namedWindow('darker', 0)
-    cv.namedWindow('light', 0)
-    cv.namedWindow('orig', 0)
+    # cv.namedWindow('dark', 0)
+    # cv.namedWindow('darker', 0)
+    # cv.namedWindow('light', 0)
+    # cv.namedWindow('orig', 0)
 
     img = cv.imread(path, 0)
 
     alpha = random.randint(15, 50) / 100
-    beta = random.randint(5, 11)
+    beta = random.randint(20, 50)
     dark = cv.convertScaleAbs(img, alpha=alpha, beta=beta)
 
-    alpha = random.randint(5, 10) / 100
-    beta = random.randint(20, 50)
+    alpha = random.randint(10, 12) / 100
+    beta = random.randint(15, 30)
     darker = cv.convertScaleAbs(img, alpha=alpha, beta=beta)
 
-    alpha = random.randint(130, 180) / 100
+    alpha = random.randint(130, 135) / 100
     beta = random.randint(20, 50)
     light = cv.convertScaleAbs(img, alpha=alpha, beta=beta)
 
-    # print(filecopy)
-    # print(outfile)
-
-    cv.imshow('dark', dark)
-    cv.imshow('darker', darker)
-    cv.imshow('light', light)
-    cv.imshow('orig', img)
-    cv.waitKey(0)
+    # cv.imshow('dark', dark)
+    # cv.imshow('darker', darker)
+    # cv.imshow('light', light)
+    # cv.imshow('orig', img)
+    # cv.waitKey(0)
 
     cv.imwrite(filecopy, img)
     cv.imwrite(dark_file, dark)
