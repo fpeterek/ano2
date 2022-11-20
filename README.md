@@ -1,3 +1,11 @@
+## Data Enhancement
+
+```sh
+mkdir data/enhanced
+mkdir data/enhanced/{free,full}
+
+python3 parking_lot/data_enhancement.py night-images --free data/train_images/free --occupied data/train_images/full --dest data/enhanced
+```
 
 ## Train
 
