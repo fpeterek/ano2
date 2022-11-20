@@ -99,8 +99,8 @@ def train_cnn(
 
     batch_size = 4
 
-    trainset = CarParkDS(occupied_dir='data/train_images/full',
-                         empty_dir='data/train_images/free',
+    trainset = CarParkDS(occupied_dir=occupied_set,
+                         empty_dir=free_set,
                          transform=transform)
     trainloader = torch.utils.data.DataLoader(
             trainset, batch_size=batch_size, shuffle=True, num_workers=2)

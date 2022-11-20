@@ -10,11 +10,16 @@ def convert_img(path: str, outdir: str):
     split = os.path.split(path)
     folder = os.path.split(split[0])[1]
     filecopy = os.path.join(outdir, folder, split[1])
-    outfile = f'{os.path.splitext(split[1])[0]}_dark.png'
 
-    outfile = os.path.join(outdir, folder, outfile)
+    dark_file = f'{os.path.splitext(split[1])[0]}_dark.png'
+    darker_file = f'{os.path.splitext(split[1])[0]}_darker.png'
+    light_file = f'{os.path.splitext(split[1])[0]}_light.png'
 
-    cv.namedWindow('Zpiceny eduroam', 0)
+    dark_file = os.path.join(outdir, folder, dark_file)
+
+    cv.namedWindow('dark', 0)
+    cv.namedWindow('darker', 0)
+    cv.namedWindow('light', 0)
     cv.namedWindow('orig', 0)
 
     img = cv.imread(path, 0)
@@ -23,15 +28,27 @@ def convert_img(path: str, outdir: str):
     beta = random.randint(5, 11)
     dark = cv.convertScaleAbs(img, alpha=alpha, beta=beta)
 
+    alpha = random.randint(5, 10) / 100
+    beta = random.randint(20, 50)
+    darker = cv.convertScaleAbs(img, alpha=alpha, beta=beta)
+
+    alpha = random.randint(130, 180) / 100
+    beta = random.randint(20, 50)
+    light = cv.convertScaleAbs(img, alpha=alpha, beta=beta)
+
     # print(filecopy)
     # print(outfile)
 
-    cv.imshow('Zpiceny eduroam', dark)
+    cv.imshow('dark', dark)
+    cv.imshow('darker', darker)
+    cv.imshow('light', light)
     cv.imshow('orig', img)
     cv.waitKey(0)
 
     cv.imwrite(filecopy, img)
-    cv.imwrite(outfile, dark)
+    cv.imwrite(dark_file, dark)
+    cv.imwrite(darker_file, darker)
+    cv.imwrite(light_file, light)
 
 
 @click.command()

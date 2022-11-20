@@ -13,7 +13,7 @@ import util
 class Net(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = nn.Conv2d(1, 64, 5)
+        self.conv1 = nn.Conv2d(1, 64, 3)
         self.norm1 = nn.BatchNorm2d(64)
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(64, 128, 3)
@@ -23,7 +23,7 @@ class Net(nn.Module):
         self.fc1 = nn.LazyLinear(120)
         self.fc2 = nn.LazyLinear(84)
         self.fc3 = nn.LazyLinear(10)
-        self.dropout = nn.Dropout(0.5)
+        self.dropout = nn.Dropout(0.3)
 
     def forward(self, x):
         x = self.pool(F.relu(self.norm1(self.conv1(x))))
