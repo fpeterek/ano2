@@ -113,7 +113,7 @@ def train_cnn(
     best_loss = 1.0
     best_model = {}
 
-    for epoch in range(3):  # loop over the dataset multiple times
+    for epoch in range(4):  # loop over the dataset multiple times
 
         print(f'{epoch=}')
 
