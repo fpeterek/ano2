@@ -4,6 +4,7 @@ import random
 
 import click
 import cv2 as cv
+import scipy as sp
 
 
 def dark_img(img):
@@ -56,7 +57,16 @@ def noise_img(img):
     color = (210, 210, 210)
     thickness = -1
 
-    copy = img.copy()
+    avg = 0
+    for x in range(80):
+        for y in range(80):
+            avg += img[y][x]
+
+    avg /= 80*80
+
+    copy = cv.convertScaleAbs(img, alpha=1.0, beta=25)
+    angle = random.randint(-40, 40)
+    copy = sp.ndimage.rotate(copy, angle, reshape=False, cval=avg)
 
     return cv.ellipse(copy, center_coordinates, axesLength, angle,
                       startAngle, endAngle, color, thickness)
