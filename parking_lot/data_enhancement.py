@@ -45,23 +45,12 @@ def light_img(img):
     return cv.convertScaleAbs(img, alpha=alpha, beta=beta)
 
 
-def lin_shade(light, shade):
-    shade_len = random.randint(30, 45)
+def coord_id(x):
+    return x
 
-    ranges = [
-            (range(shade_len), range(80)),
-            (range(80-shade_len, 80), range(80)),
-            (range(80), range(shade_len)),
-            (range(80), range(80-shade_len, 80)),
-            ]
 
-    x_range, y_range = random.choice(ranges)
-
-    for x in x_range:
-        for y in y_range:
-            light[y][x] = shade[y][x]
-
-    return light
+def coord_inv(x):
+    return 79 - x
 
 
 def horizonal_shade(x, y):
@@ -72,8 +61,29 @@ def vertical_shade(x, y):
     return x, y
 
 
+def lin_shade(light, shade):
+    shade_len = random.randint(25, 45)
+    falloff_base = 15
+
+    dirfn = random.choice((horizonal_shade, vertical_shade))
+    sidefn = random.choice((coord_id, coord_inv))
+
+    for x in range(shade_len):
+        shade_ratio = min(math.log(shade_len - x) / math.log(falloff_base), 1)
+        light_ratio = 1 - shade_ratio
+        for y in range(80):
+            sx = sidefn(x)
+            dx, dy = dirfn(sx, y)
+            light_px = light[dy][dx] * light_ratio
+            shade_px = shade[dy][dx] * shade_ratio
+
+            light[dy][dx] = light_px + shade_px
+
+    return light
+
+
 def wave_shade(light, shade):
-    width = random.randint(2, 10) * math.pi
+    width = random.randint(2, 8) * math.pi
     px_step = width / 80
     wavefn = random.choice((math.sin, math.cos))
     dirfn = random.choice((horizonal_shade, vertical_shade))
@@ -92,8 +102,13 @@ def wave_shade(light, shade):
 
 
 def shade_img(img):
-    light = cv.convertScaleAbs(img, alpha=1.2, beta=25)
-    shade = cv.convertScaleAbs(img, alpha=0.6, beta=25)
+
+    alpha_l = random.randint(10, 12) / 10
+    alpha_s = random.randint(6, 7) / 10
+    beta = random.randint(0, 25)
+
+    light = cv.convertScaleAbs(img, alpha=alpha_l, beta=beta)
+    shade = cv.convertScaleAbs(img, alpha=alpha_s, beta=beta)
 
     fn = random.choice((lin_shade, wave_shade))
 
@@ -110,7 +125,7 @@ def noise_img(img):
     color = random.choice(((210, 210, 210), (30, 30, 30)))
     thickness = -1
 
-    copy = cv.convertScaleAbs(img, alpha=1.0, beta=25)
+    copy = cv.convertScaleAbs(img, alpha=1.0, beta=random.randint(-15, 15))
 
     return cv.ellipse(copy, center_coordinates, axesLength, angle,
                       startAngle, endAngle, color, thickness)
@@ -173,8 +188,8 @@ def convert_img(path: str, outdir: str, vis: bool):
 @click.option('--dest', help='Destination folder')
 @click.option('--vis', type=bool, help='Visualize images', default=False)
 def night_images(free, occupied, dest, vis):
-    imgs = glob.glob(f'{free}/*')
-    imgs += glob.glob(f'{occupied}/*')
+    imgs = glob.glob(f'{occupied}/*')
+    imgs += glob.glob(f'{free}/*')
 
     for img in imgs:
         convert_img(img, dest, vis)
