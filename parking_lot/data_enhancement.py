@@ -1,32 +1,51 @@
 import glob
 import os
 import random
+import math
 
 import click
 import cv2 as cv
 import scipy as sp
 
 
+def rotate_result(fn):
+    def with_rotation(img):
+        img = fn(img)
+        avg = 0
+        for x in range(80):
+            for y in range(80):
+                avg += img[y][x]
+
+        avg /= 80*80
+
+        angle = random.randint(-40, 40)
+        return sp.ndimage.rotate(img, angle, reshape=False, cval=avg)
+
+    return with_rotation
+
+
+@rotate_result
 def dark_img(img):
     alpha = random.randint(20, 50) / 100
     beta = random.randint(0, 20)
     return cv.convertScaleAbs(img, alpha=alpha, beta=beta)
 
 
+@rotate_result
 def darker_img(img):
     alpha = random.randint(13, 15) / 100
     beta = random.randint(15, 30)
     return cv.convertScaleAbs(img, alpha=alpha, beta=beta)
 
 
+@rotate_result
 def light_img(img):
-    alpha = random.randint(123, 125) / 100
+    alpha = random.randint(110, 120) / 100
     beta = random.randint(20, 50)
     return cv.convertScaleAbs(img, alpha=alpha, beta=beta)
 
 
-def shade_img(img):
-
+def lin_shade(light, shade):
     shade_len = random.randint(30, 45)
 
     ranges = [
@@ -38,9 +57,6 @@ def shade_img(img):
 
     x_range, y_range = random.choice(ranges)
 
-    light = cv.convertScaleAbs(img, alpha=1.2, beta=25)
-    shade = cv.convertScaleAbs(img, alpha=0.6, beta=25)
-
     for x in x_range:
         for y in y_range:
             light[y][x] = shade[y][x]
@@ -48,25 +64,53 @@ def shade_img(img):
     return light
 
 
+def horizonal_shade(x, y):
+    return y, x
+
+
+def vertical_shade(x, y):
+    return x, y
+
+
+def wave_shade(light, shade):
+    width = random.randint(2, 10) * math.pi
+    px_step = width / 80
+    wavefn = random.choice((math.sin, math.cos))
+    dirfn = random.choice((horizonal_shade, vertical_shade))
+
+    for x in range(80):
+        phase = px_step * x
+        light_ratio = (1 + wavefn(phase)) / 2
+        dark_ratio = 1 - light_ratio
+        for y in range(80):
+            tx, ty = dirfn(x, y)
+            light_px = light[tx][ty] * light_ratio
+            dark_px = shade[tx][ty] * dark_ratio
+            light[tx][ty] = light_px + dark_px
+
+    return light
+
+
+def shade_img(img):
+    light = cv.convertScaleAbs(img, alpha=1.2, beta=25)
+    shade = cv.convertScaleAbs(img, alpha=0.6, beta=25)
+
+    fn = random.choice((lin_shade, wave_shade))
+
+    return fn(light, shade)
+
+
+@rotate_result
 def noise_img(img):
     center_coordinates = (random.randint(25, 80-25), random.randint(25, 80-25))
-    axesLength = (random.randint(7, 16), random.randint(7, 16))
+    axesLength = (random.randint(7, 13), random.randint(7, 13))
     angle = random.randint(0, 180)
     startAngle = 0
     endAngle = 360
-    color = (210, 210, 210)
+    color = random.choice(((210, 210, 210), (30, 30, 30)))
     thickness = -1
 
-    avg = 0
-    for x in range(80):
-        for y in range(80):
-            avg += img[y][x]
-
-    avg /= 80*80
-
     copy = cv.convertScaleAbs(img, alpha=1.0, beta=25)
-    angle = random.randint(-40, 40)
-    copy = sp.ndimage.rotate(copy, angle, reshape=False, cval=avg)
 
     return cv.ellipse(copy, center_coordinates, axesLength, angle,
                       startAngle, endAngle, color, thickness)
