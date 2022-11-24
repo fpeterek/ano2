@@ -191,6 +191,10 @@ def night_images(free, occupied, dest, vis):
     imgs = glob.glob(f'{occupied}/*')
     imgs += glob.glob(f'{free}/*')
 
+    # Shuffle only serves visualization purposes
+    if vis:
+        random.shuffle(imgs)
+
     for img in imgs:
         convert_img(img, dest, vis)
 
