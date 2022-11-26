@@ -13,29 +13,7 @@ import conf
 from combined_signaller import CombinedSignaller
 from cnn import CNNSignaller, ResnetSignaller
 from edge_predictor import EdgePredictor
-
-
-def load_coords(filename: str):
-    pkm_coordinates = []
-    with open(filename) as pkm_file:
-        pkm_lines = pkm_file.readlines()
-
-        for line in pkm_lines:
-            st_line = line.strip()
-            sp_line = list(st_line.split(" "))
-            pkm_coordinates.append(sp_line)
-
-    return pkm_coordinates
-
-
-def mark_occupied(coordinates: list, target_img) -> None:
-    p1 = int(coordinates[0]), int(coordinates[1]),
-    p2 = int(coordinates[2]), int(coordinates[3]),
-    p3 = int(coordinates[4]), int(coordinates[5]),
-    p4 = int(coordinates[6]), int(coordinates[7]),
-
-    cv.line(target_img, p1, p3, 255, 2)
-    cv.line(target_img, p2, p4, 255, 2)
+from rcnn import rcnn as rcnn_detection
 
 
 def extract_parking_space(orig_img, coordinates):
@@ -84,7 +62,7 @@ def process_img(
 
         res.append(occupied)
         if occupied:
-            mark_occupied(coord, img_cpy)
+            util.mark_occupied(coord, img_cpy)
 
     succ, total = util.cmp_results(res, correct_results)
 
@@ -97,7 +75,7 @@ def process_img(
 @click.command()
 @click.option('--cnn-model', help='Path to CNN model used in prediction')
 def cnn_classify(cnn_model):
-    pkm_coordinates = load_coords('data/parking_map_python.txt')
+    pkm_coordinates = util.load_coords('data/parking_map_python.txt')
     test_images = sorted([img for img in glob.glob('data/test_images/*.jpg')])
     cnn = CNNSignaller(cnn_model)
 
@@ -130,7 +108,7 @@ def classify(lbp_model,
              edge_model,
              final_classifier_model) -> None:
 
-    pkm_coordinates = load_coords('data/parking_map_python.txt')
+    pkm_coordinates = util.load_coords('data/parking_map_python.txt')
     test_images = sorted([img for img in glob.glob('data/test_images/*.jpg')])
     lbp_booster = util.load_booster(lbp_model)
     hog_svm = cv.ml.SVM.load(hog_model)
@@ -158,6 +136,12 @@ def classify(lbp_model,
     print(f'Total success rate: {total_successful / total}')
 
 
+@click.command()
+@click.option('--highlight-cars', type=bool, default=False)
+def rcnn(highlight_cars) -> None:
+    rcnn_detection(highlight_cars)
+
+
 @click.group('Classification')
 def main() -> None:
     pass
@@ -165,6 +149,7 @@ def main() -> None:
 
 main.add_command(classify)
 main.add_command(cnn_classify)
+main.add_command(rcnn)
 
 
 if __name__ == "__main__":

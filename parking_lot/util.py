@@ -13,6 +13,30 @@ import torchvision.transforms as transforms
 import conf
 
 
+def mark_occupied(coordinates: list, target_img) -> None:
+    p1 = int(coordinates[0]), int(coordinates[1]),
+    p2 = int(coordinates[2]), int(coordinates[3]),
+    p3 = int(coordinates[4]), int(coordinates[5]),
+    p4 = int(coordinates[6]), int(coordinates[7]),
+
+    cv.line(target_img, p1, p3, 255, 2)
+    cv.line(target_img, p2, p4, 255, 2)
+
+
+def load_coords(filename: str):
+    pkm_coordinates = []
+    with open(filename) as pkm_file:
+        pkm_lines = pkm_file.readlines()
+
+        for line in pkm_lines:
+            stripped = line.strip()
+            split = list(stripped.split(" "))
+            split = [int(i) for i in split]
+            pkm_coordinates.append(split)
+
+    return pkm_coordinates
+
+
 def four_point_transform(image, one_c):
     # https://www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/
 
