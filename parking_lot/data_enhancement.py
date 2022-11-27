@@ -158,6 +158,22 @@ def convert_img(path: str, outdir: str, vis: bool):
 
     img = cv.imread(path, 0)
 
+    transforms = [
+            (dark_file, dark_img),
+            (darker_file, darker_img),
+            (light_file, light_img),
+            (shade_file, shade_img),
+            (noise_file, noise_img),
+            (filecopy, lambda x: x),
+            ]
+
+    # if not vis:
+    #     transforms = random.sample(transforms, 3)
+
+    #     for file, transform in transforms:
+    #         cv.imwrite(file, transform(img))
+    #     return
+
     dark = dark_img(img)
     darker = darker_img(img)
     light = light_img(img)
