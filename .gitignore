@@ -3,6 +3,7 @@ venv/
 __pycache__/
 train_images/
 test_images/
+data/enhanced
 lbpface.xml
 haarface.xml
 cifar-10-*

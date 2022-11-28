@@ -39,8 +39,8 @@ def darker_img(img):
 
 @rotate_result
 def light_img(img):
-    alpha = random.randint(110, 120) / 100
-    beta = random.randint(20, 50)
+    alpha = random.randint(115, 150) / 100
+    beta = random.randint(20, 40)
     return cv.convertScaleAbs(img, alpha=alpha, beta=beta)
 
 
@@ -130,16 +130,45 @@ def draw_ellipse(img):
     return cv.ellipse(img, center, axes_len, angle, 0, 360, color, -1)
 
 
+def rand_coord():
+    return random.randint(20, 60)
+
+
+def rand_left():
+    return 0, rand_coord()
+
+
+def rand_right():
+    return 80, rand_coord()
+
+
+def rand_up():
+    y, x = rand_left()
+    return x, y
+
+
+def rand_down():
+    y, x = rand_right()
+    return x, y
+
+
 def draw_line(img):
-    angle = random.randint(0, 359)
+    fns = [rand_left, rand_right, rand_up, rand_down]
+    start, end = random.sample(fns, 2)
+    start, end = start(), end()
+    cv.line(img, start, end, (30, 30, 30), 4)
+    cv.line(img, start, end, (225, 225, 225), 2)
+
+    return img
 
 
 @rotate_result
 def noise_img(img):
+    fn = random.choice((draw_ellipse, draw_line))
     alpha = random.randint(90, 110) / 100
     beta = random.randint(-15, 15)
     copy = cv.convertScaleAbs(img, alpha=alpha, beta=beta)
-    return draw_ellipse(copy)
+    return fn(copy)
 
 
 def convert_img(path: str, outdir: str, vis: bool):
@@ -168,22 +197,6 @@ def convert_img(path: str, outdir: str, vis: bool):
         cv.namedWindow('noise', 0)
 
     img = cv.imread(path, 0)
-
-    transforms = [
-            (dark_file, dark_img),
-            (darker_file, darker_img),
-            (light_file, light_img),
-            (shade_file, shade_img),
-            (noise_file, noise_img),
-            (filecopy, lambda x: x),
-            ]
-
-    # if not vis:
-    #     transforms = random.sample(transforms, 3)
-
-    #     for file, transform in transforms:
-    #         cv.imwrite(file, transform(img))
-    #     return
 
     dark = dark_img(img)
     darker = darker_img(img)
