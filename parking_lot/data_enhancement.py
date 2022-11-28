@@ -33,9 +33,8 @@ def dark_img(img):
 
 @rotate_result
 def darker_img(img):
-    alpha = random.randint(13, 15) / 100
-    beta = random.randint(15, 30)
-    return cv.convertScaleAbs(img, alpha=alpha, beta=beta)
+    alpha = random.randint(15, 18) / 100
+    return cv.convertScaleAbs(img, alpha=alpha, beta=0)
 
 
 @rotate_result
@@ -104,7 +103,7 @@ def wave_shade(light, shade):
 def shade_img(img):
 
     alpha_l = random.randint(10, 12) / 10
-    alpha_s = random.randint(6, 7) / 10
+    alpha_s = random.randint(40, 55) / 100
     beta = random.randint(0, 25)
 
     light = cv.convertScaleAbs(img, alpha=alpha_l, beta=beta)
@@ -115,20 +114,32 @@ def shade_img(img):
     return fn(light, shade)
 
 
+def draw_ellipse(img):
+    center = (random.randint(25, 80-25), random.randint(25, 80-25))
+    axes_len = (random.randint(7, 13), random.randint(7, 13))
+    angle = random.randint(0, 180)
+    color = random.choice((220, 35))
+    inv_color = 255 - color
+    color = (color, color, color)
+    inv_color = (inv_color, inv_color, inv_color)
+
+    axes_len2 = (axes_len[0] + 2, axes_len[1] + 2)
+
+    cv.ellipse(img, center, axes_len2, angle, 0, 360, inv_color, -1)
+
+    return cv.ellipse(img, center, axes_len, angle, 0, 360, color, -1)
+
+
+def draw_line(img):
+    angle = random.randint(0, 359)
+
+
 @rotate_result
 def noise_img(img):
-    center_coordinates = (random.randint(25, 80-25), random.randint(25, 80-25))
-    axesLength = (random.randint(7, 13), random.randint(7, 13))
-    angle = random.randint(0, 180)
-    startAngle = 0
-    endAngle = 360
-    color = random.choice(((210, 210, 210), (30, 30, 30)))
-    thickness = -1
-
-    copy = cv.convertScaleAbs(img, alpha=1.0, beta=random.randint(-15, 15))
-
-    return cv.ellipse(copy, center_coordinates, axesLength, angle,
-                      startAngle, endAngle, color, thickness)
+    alpha = random.randint(90, 110) / 100
+    beta = random.randint(-15, 15)
+    copy = cv.convertScaleAbs(img, alpha=alpha, beta=beta)
+    return draw_ellipse(copy)
 
 
 def convert_img(path: str, outdir: str, vis: bool):
@@ -177,7 +188,6 @@ def convert_img(path: str, outdir: str, vis: bool):
     dark = dark_img(img)
     darker = darker_img(img)
     light = light_img(img)
-    # TODO: These two make things worse
     shade = shade_img(img)
     noise = noise_img(img)
 
