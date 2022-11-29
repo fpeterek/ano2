@@ -24,7 +24,18 @@ def rotate_result(fn):
     return with_rotation
 
 
+def maybe_noise(fn):
+    def maybe_noise(img):
+        if random.random() < 0.3:
+            f = random.choice((draw_ellipse, draw_line))
+            img = f(img.copy())
+        return fn(img)
+
+    return maybe_noise
+
+
 @rotate_result
+@maybe_noise
 def dark_img(img):
     alpha = random.randint(20, 50) / 100
     beta = random.randint(0, 20)
@@ -32,15 +43,18 @@ def dark_img(img):
 
 
 @rotate_result
+@maybe_noise
 def darker_img(img):
-    alpha = random.randint(15, 18) / 100
-    return cv.convertScaleAbs(img, alpha=alpha, beta=0)
+    alpha = random.randint(13, 15) / 100
+    beta = random.randint(-10, 15)
+    return cv.convertScaleAbs(img, alpha=alpha, beta=beta)
 
 
 @rotate_result
+@maybe_noise
 def light_img(img):
     alpha = random.randint(115, 150) / 100
-    beta = random.randint(20, 40)
+    beta = random.randint(15, 50)
     return cv.convertScaleAbs(img, alpha=alpha, beta=beta)
 
 
@@ -81,6 +95,17 @@ def lin_shade(light, shade):
     return light
 
 
+def mask_shade(light, shade):
+    mask = cv.imread('data/shadow_mask.png', 0)
+
+    for x in range(80):
+        for y in range(80):
+            if mask[y][x] != 255:
+                light[y][x] = shade[y][x]
+
+    return light
+
+
 def wave_shade(light, shade):
     width = random.randint(2, 8) * math.pi
     px_step = width / 80
@@ -100,16 +125,16 @@ def wave_shade(light, shade):
     return light
 
 
+@maybe_noise
 def shade_img(img):
-
     alpha_l = random.randint(10, 12) / 10
-    alpha_s = random.randint(40, 55) / 100
+    alpha_s = random.randint(30, 55) / 100
     beta = random.randint(0, 25)
 
     light = cv.convertScaleAbs(img, alpha=alpha_l, beta=beta)
     shade = cv.convertScaleAbs(img, alpha=alpha_s, beta=beta)
 
-    fn = random.choice((lin_shade, wave_shade))
+    fn = random.choice((lin_shade, wave_shade, mask_shade))
 
     return fn(light, shade)
 
