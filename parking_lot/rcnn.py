@@ -36,7 +36,7 @@ def rcnn(highlight_cars) -> None:
                'N/A', 'book', 'clock', 'vase', 'scissors', 'teddy bear',
                'hair drier', 'toothbrush']
 
-    cv.namedWindow('Zpiceny eduroam', 0)
+    cv.namedWindow('rccn window', 0)
     for img in test_images:
         img = cv.imread(img)
         cpy = img.copy()
@@ -67,7 +67,7 @@ def rcnn(highlight_cars) -> None:
             if occ:
                 util.mark_occupied(space, cpy)
 
-        cv.imshow('Zpiceny eduroam', cpy)
+        cv.imshow('rccn window', cpy)
         cv.waitKey(0)
 
 
