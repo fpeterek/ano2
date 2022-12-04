@@ -20,13 +20,13 @@ transform = util.resnet_transform()
 
 batch_size = 4
 
-trainset = CarParkDS(occupied_dir='data/train_images/full',
-                     empty_dir='data/train_images/free',
+trainset = CarParkDS(occupied_dir='data/enhanced/full',
+                     empty_dir='data/enhanced/free',
                      transform=transform)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                           shuffle=True, num_workers=2)
 
-for epoch in range(4):  # loop over the dataset multiple times
+for epoch in range(8):  # loop over the dataset multiple times
 
     print(f'{epoch=}')
 
@@ -47,7 +47,7 @@ for epoch in range(4):  # loop over the dataset multiple times
         # print statistics
         running_loss += loss.item()
         if i % 200 == 199:    # print every 2000 mini-batches
-            print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 200:.3f}')
+            print(f'[{epoch}, {i + 1:5d}] loss: {running_loss / 200:.3f}')
             running_loss = 0.0
 
 print('Finished Training')

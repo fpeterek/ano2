@@ -17,17 +17,14 @@ class CombinedSignaller:
     def cnn_predict(self, img):
         return self.cnn.predict(img)
 
-    def __init__(self, hog, lbp, cnn, edge_pred):
+    def __init__(self, hog, lbp, edge_pred):
         self.hog = util.create_hog_descriptor()
         self.lbp = util.create_lbp_signaller()
         self.hog_model = hog
         self.lbp_model = lbp
-        self.cnn = cnn
         self.edge_pred = edge_pred
 
     def get_signals(self, img) -> np.array:
-        # cnn = self.cnn_predict(img)[1]
-
         lbp = self.lbp_predict(img)
         hog = self.hog_predict(img)
         edge = self.edge_pred.predict(img)

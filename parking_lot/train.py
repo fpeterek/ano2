@@ -8,6 +8,7 @@ import sklearn.neural_network as sknn
 import torch
 import torch.optim as optim
 import torch.nn as nn
+import torchvision.models as models
 
 from cnn import Net
 
@@ -15,7 +16,6 @@ from torch_ds import CarParkDS
 import util
 from combined_signaller import CombinedSignaller
 from edge_predictor import EdgeSignaller, EdgePredictor
-from cnn import CNNSignaller
 
 
 @click.command()
@@ -86,12 +86,10 @@ def train_lbp(free_set: str, occupied_set: str, model_name: str):
 @click.command()
 @click.option('--free-set', help='Free parking spaces')
 @click.option('--occupied-set', help='Occupied parking spaces')
-@click.option('--epochs', help='Number of training epochs')
 @click.option('--model-name', help='Output path')
 def train_cnn(
         free_set: str,
         occupied_set: str,
-        epochs: int,
         model_name: str,
         ):
 
@@ -144,6 +142,61 @@ def train_cnn(
 @click.option('--occupied-set',
               help='Folder with images of occupied parking spaces')
 @click.option('--model-name', help='Name of model')
+def train_resnet(free_set, occupied_set, model_name):
+    resnet18 = models.resnet18(pretrained=True)
+
+    num_features = resnet18.fc.in_features
+    resnet18.fc = nn.Linear(num_features, 2)
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.SGD(resnet18.fc.parameters(), lr=0.001, momentum=0.9)
+
+    transform = util.resnet_transform()
+
+    batch_size = 4
+
+    trainset = CarParkDS(occupied_dir='data/enhanced/full',
+                         empty_dir='data/enhanced/free',
+                         transform=transform)
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                              shuffle=True, num_workers=2)
+
+    best_loss = 1.0
+    best_model = None
+
+    for epoch in range(8):
+
+        print(f'{epoch=}')
+
+        running_loss = 0.0
+        for i, data in enumerate(trainloader, 0):
+            inputs, labels = data
+
+            optimizer.zero_grad()
+
+            outputs = resnet18(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+
+            running_loss += loss.item()
+            if i % 200 == 199:
+                print(f'[{epoch}, {i + 1:5d}] loss: {running_loss / 200:.3f}')
+                if running_loss < best_loss:
+                    best_model = resnet18.state_dict().copy()
+                running_loss = 0.0
+
+    print('Finished Training')
+
+    if best_model:
+        torch.save(best_model, model_name)
+
+
+@click.command()
+@click.option('--free-set', help='Folder with images of free parking spaces')
+@click.option('--occupied-set',
+              help='Folder with images of occupied parking spaces')
+@click.option('--model-name', help='Name of model')
 def train_edge_classifier(
         free_set: str,
         occupied_set: str,
@@ -176,7 +229,6 @@ def train_edge_classifier(
 @click.option('--free-set', help='Folder with images of free parking spaces')
 @click.option('--occupied-set',
               help='Folder with images of occupied parking spaces')
-@click.option('--cnn-model', help='Name of CNN model')
 @click.option('--hog-model', help='Name of HOG model')
 @click.option('--lbp-model', help='Name of LBP model')
 @click.option('--edge-model', help='Name of edge model')
@@ -184,17 +236,15 @@ def train_edge_classifier(
 def train_final_classifier(
         free_set: str,
         occupied_set: str,
-        cnn_model: str,
         hog_model: str,
         lbp_model: str,
         edge_model: str,
         model_name: str):
 
-    cnn = CNNSignaller(cnn_model)
     lbp_model = util.load_booster(lbp_model)
     hog_model = cv.ml.SVM.load(hog_model)
     edge_pred = EdgePredictor.from_file(edge_model)
-    signaller = CombinedSignaller(cnn=cnn, hog=hog_model, lbp=lbp_model,
+    signaller = CombinedSignaller(hog=hog_model, lbp=lbp_model,
                                   edge_pred=edge_pred)
 
     signals, labels = util.load_training_ds(
@@ -227,6 +277,7 @@ main.add_command(train_lbp)
 main.add_command(train_final_classifier)
 main.add_command(train_edge_classifier)
 main.add_command(train_cnn)
+main.add_command(train_resnet)
 
 
 if __name__ == '__main__':

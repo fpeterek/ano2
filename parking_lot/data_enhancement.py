@@ -251,7 +251,7 @@ def convert_img(path: str, outdir: str, vis: bool):
 @click.option('--occupied', help='Occupied parking spaces')
 @click.option('--dest', help='Destination folder')
 @click.option('--vis', type=bool, help='Visualize images', default=False)
-def night_images(free, occupied, dest, vis):
+def enhance(free, occupied, dest, vis):
     imgs = glob.glob(f'{occupied}/*')
     imgs += glob.glob(f'{free}/*')
 
@@ -268,7 +268,7 @@ def main():
     pass
 
 
-main.add_command(night_images)
+main.add_command(enhance)
 
 
 if __name__ == '__main__':
