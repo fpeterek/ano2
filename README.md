@@ -51,7 +51,7 @@ python3 parking_lot/train.py train-final-classifier --free-set data/train_images
 ## Prediction
 
 ```sh
-python3 parking_lot classify --lbp-model models/lbp.json --hog-model models/hog.yml --final-classifier-model models/classifier.model
+python3 parking_lot classify --lbp-model models/lbp.json --hog-model models/hog.yml --classifier-model models/classifier.model
 ```
 
 # Custom Convolutional Neural Network
