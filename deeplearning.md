@@ -113,6 +113,9 @@ The trained network, however, still had problems with very bright and very dark 
 images which contained a lot of noise (e.g. shadows). This could, however, be rectified using data
 enhancement techniques.
 
+At this moment, the model took approximately an hour to train, though I did train the model on a
+CPU.
+
 ### Data Enhancement
 
 Using data enhancement, we increase the size of the training dataset sixfold.
@@ -143,6 +146,8 @@ step of the data enhancement process.
 
 Using the described architecture and data enhancement process, we are able to get a very accurate
 model.
+
+Training the model on a CPU took approximately 6 hours.
 
 ```
 Success rate: 1.0
